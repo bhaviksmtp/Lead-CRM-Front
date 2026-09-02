@@ -13,16 +13,20 @@ export default defineConfig([
 
   globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
 
+  js.configs.recommended,
+  ...pluginVue.configs['flat/essential'],
+
   {
     languageOptions: {
       globals: {
         ...globals.browser,
       },
     },
+    rules: {
+      'vue/multi-word-component-names': 'off',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrors: 'none', ignoreRestSiblings: true }],
+    },
   },
-
-  js.configs.recommended,
-  ...pluginVue.configs['flat/essential'],
 
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
 

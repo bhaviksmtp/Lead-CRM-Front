@@ -25,37 +25,23 @@ export const useFollowUpsStore = defineStore('followups', {
       try {
         const response = await followupsApi.createFollowUp(data);
         return response.data;
-      } catch (err) {
-        throw err;
       } finally {
         this.loading = false;
       }
     },
     async completeFollowUp(id, notes) {
-      try {
-        const response = await followupsApi.completeFollowUp(id, notes);
-        this.followUps = this.followUps.map(f => f.id === id ? response.data.follow_up : f);
-        return response.data;
-      } catch (err) {
-        throw err;
-      }
+      const response = await followupsApi.completeFollowUp(id, notes);
+      this.followUps = this.followUps.map(f => f.id === id ? response.data.follow_up : f);
+      return response.data;
     },
     async rescheduleFollowUp(id, scheduledAt, notes) {
-      try {
-        const response = await followupsApi.rescheduleFollowUp(id, scheduledAt, notes);
-        this.followUps = this.followUps.map(f => f.id === id ? response.data.follow_up : f);
-        return response.data;
-      } catch (err) {
-        throw err;
-      }
+      const response = await followupsApi.rescheduleFollowUp(id, scheduledAt, notes);
+      this.followUps = this.followUps.map(f => f.id === id ? response.data.follow_up : f);
+      return response.data;
     },
     async deleteFollowUp(id) {
-      try {
-        await followupsApi.deleteFollowUp(id);
-        this.followUps = this.followUps.filter(f => f.id !== id);
-      } catch (err) {
-        throw err;
-      }
+      await followupsApi.deleteFollowUp(id);
+      this.followUps = this.followUps.filter(f => f.id !== id);
     }
   }
 });

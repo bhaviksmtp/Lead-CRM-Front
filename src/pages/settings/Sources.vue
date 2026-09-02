@@ -90,11 +90,27 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Source Name *</label>
-              <input v-model="form.name" type="text" class="form-control" placeholder="e.g. Google Ads" required />
+              <input
+                v-model="form.name"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.name }]"
+                placeholder="e.g. Google Ads"
+                @input="clearError('name')"
+                required
+              />
+              <div v-if="validationErrors.name" class="invalid-feedback">{{ validationErrors.name[0] }}</div>
             </div>
             <div class="mb-3">
               <label class="form-label">Source Code * <small class="text-muted-custom">(unique API identifier)</small></label>
-              <input v-model="form.code" type="text" class="form-control" placeholder="e.g. google_ads" required />
+              <input
+                v-model="form.code"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.code }]"
+                placeholder="e.g. google_ads"
+                @input="clearError('code')"
+                required
+              />
+              <div v-if="validationErrors.code" class="invalid-feedback">{{ validationErrors.code[0] }}</div>
             </div>
             <div class="mb-0 d-flex align-items-center gap-3">
               <label class="toggle-switch">
@@ -106,8 +122,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" @click="showModal = false" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-floppy"></i> Save Source
+            <button type="submit" class="btn btn-primary" :disabled="saving">
+              <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-floppy"></i>
+              Save Source
             </button>
           </div>
         </form>
@@ -120,20 +138,30 @@
 import { ref, reactive, onMounted } from 'vue';
 import settingsApi from '@/api/settings';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const loading = ref(true);
+const saving = ref(false);
 const sources = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);
+const validationErrors = ref({});
 
 const form = reactive({
   name: '',
   code: '',
   is_active: true
 });
+
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
 
 const loadSources = async () => {
   try {
@@ -155,6 +183,7 @@ const openCreateModal = () => {
   form.name = '';
   form.code = '';
   form.is_active = true;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
@@ -164,10 +193,13 @@ const openEditModal = (source) => {
   form.name = source.name;
   form.code = source.code;
   form.is_active = source.is_active;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
 const submitForm = async () => {
+  saving.value = true;
+  validationErrors.value = {};
   try {
     if (isEdit.value) {
       await settingsApi.updateSource(activeId.value, form);
@@ -179,18 +211,27 @@ const submitForm = async () => {
     showModal.value = false;
     loadSources();
   } catch (err) {
-    toast.error(err.message || 'Failed to save source.');
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to save source.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save source.');
+    }
+  } finally {
+    saving.value = false;
   }
 };
 
 const deleteConfirm = async (source) => {
-  if (confirm(`Delete source: ${source.name}?`)) {
+  const confirmed = await confirmDelete(`source "${source.name}"`);
+  if (confirmed) {
     try {
       await settingsApi.deleteSource(source.id);
       toast.success('Source deleted.');
       loadSources();
     } catch (err) {
-      toast.error('Failed to delete source.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete source.');
     }
   }
 };

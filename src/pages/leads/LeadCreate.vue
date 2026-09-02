@@ -26,32 +26,69 @@
             <div class="card-body">
               <div class="mb-3">
                 <label class="form-label" for="lead-name">Full Name *</label>
-                <input id="lead-name" v-model="form.name" type="text" class="form-control" placeholder="Client full name" required />
-                <div v-if="validationErrors.name" class="form-error">{{ validationErrors.name[0] }}</div>
+                <input
+                  id="lead-name"
+                  v-model="form.name"
+                  type="text"
+                  :class="['form-control', { 'is-invalid': validationErrors.name }]"
+                  placeholder="Client full name"
+                  @input="clearError('name')"
+                  required
+                />
+                <div v-if="validationErrors.name" class="invalid-feedback">{{ validationErrors.name[0] }}</div>
               </div>
 
               <div class="mb-3">
                 <label class="form-label" for="lead-phone">Mobile Number * <small class="text-muted-custom">(Indian format)</small></label>
-                <input id="lead-phone" v-model="form.phone" type="text" class="form-control" placeholder="e.g. 9876543210" required />
-                <div v-if="validationErrors.phone" class="form-error">{{ validationErrors.phone[0] }}</div>
+                <input
+                  id="lead-phone"
+                  v-model="form.phone"
+                  type="text"
+                  :class="['form-control', { 'is-invalid': validationErrors.phone }]"
+                  placeholder="e.g. 9876543210"
+                  @input="clearError('phone')"
+                  required
+                />
+                <div v-if="validationErrors.phone" class="invalid-feedback">{{ validationErrors.phone[0] }}</div>
               </div>
 
               <div class="mb-3">
                 <label class="form-label" for="lead-whatsapp">WhatsApp Number <small class="text-muted-custom">(leave blank if same as mobile)</small></label>
-                <input id="lead-whatsapp" v-model="form.whatsapp_number" type="text" class="form-control" placeholder="WhatsApp number" />
-                <div v-if="validationErrors.whatsapp_number" class="form-error">{{ validationErrors.whatsapp_number[0] }}</div>
+                <input
+                  id="lead-whatsapp"
+                  v-model="form.whatsapp_number"
+                  type="text"
+                  :class="['form-control', { 'is-invalid': validationErrors.whatsapp_number }]"
+                  placeholder="WhatsApp number"
+                  @input="clearError('whatsapp_number')"
+                />
+                <div v-if="validationErrors.whatsapp_number" class="invalid-feedback">{{ validationErrors.whatsapp_number[0] }}</div>
               </div>
 
               <div class="mb-3">
                 <label class="form-label" for="lead-email">Email Address</label>
-                <input id="lead-email" v-model="form.email" type="email" class="form-control" placeholder="client@domain.com" />
-                <div v-if="validationErrors.email" class="form-error">{{ validationErrors.email[0] }}</div>
+                <input
+                  id="lead-email"
+                  v-model="form.email"
+                  type="email"
+                  :class="['form-control', { 'is-invalid': validationErrors.email }]"
+                  placeholder="client@domain.com"
+                  @input="clearError('email')"
+                />
+                <div v-if="validationErrors.email" class="invalid-feedback">{{ validationErrors.email[0] }}</div>
               </div>
 
               <div class="mb-0">
                 <label class="form-label" for="lead-company">Company Name</label>
-                <input id="lead-company" v-model="form.company_name" type="text" class="form-control" placeholder="Company or organization" />
-                <div v-if="validationErrors.company_name" class="form-error">{{ validationErrors.company_name[0] }}</div>
+                <input
+                  id="lead-company"
+                  v-model="form.company_name"
+                  type="text"
+                  :class="['form-control', { 'is-invalid': validationErrors.company_name }]"
+                  placeholder="Company or organization"
+                  @input="clearError('company_name')"
+                />
+                <div v-if="validationErrors.company_name" class="invalid-feedback">{{ validationErrors.company_name[0] }}</div>
               </div>
             </div>
           </div>
@@ -68,41 +105,70 @@
               <div class="row g-3 mb-3">
                 <div class="col-6">
                   <label class="form-label" for="lead-city">City</label>
-                  <input id="lead-city" v-model="form.city" type="text" class="form-control" placeholder="Mumbai" />
-                  <div v-if="validationErrors.city" class="form-error">{{ validationErrors.city[0] }}</div>
+                  <input
+                    id="lead-city"
+                    v-model="form.city"
+                    type="text"
+                    :class="['form-control', { 'is-invalid': validationErrors.city }]"
+                    placeholder="Mumbai"
+                    @input="clearError('city')"
+                  />
+                  <div v-if="validationErrors.city" class="invalid-feedback">{{ validationErrors.city[0] }}</div>
                 </div>
                 <div class="col-6">
                   <label class="form-label" for="lead-state">State</label>
-                  <input id="lead-state" v-model="form.state" type="text" class="form-control" placeholder="Maharashtra" />
-                  <div v-if="validationErrors.state" class="form-error">{{ validationErrors.state[0] }}</div>
+                  <input
+                    id="lead-state"
+                    v-model="form.state"
+                    type="text"
+                    :class="['form-control', { 'is-invalid': validationErrors.state }]"
+                    placeholder="Maharashtra"
+                    @input="clearError('state')"
+                  />
+                  <div v-if="validationErrors.state" class="invalid-feedback">{{ validationErrors.state[0] }}</div>
                 </div>
               </div>
 
               <div class="mb-3">
                 <label class="form-label" for="lead-source">Lead Source</label>
-                <select id="lead-source" v-model="form.source_id" class="form-select">
+                <select
+                  id="lead-source"
+                  v-model="form.source_id"
+                  :class="['form-select', { 'is-invalid': validationErrors.source_id }]"
+                  @change="clearError('source_id')"
+                >
                   <option value="">— Select Source —</option>
                   <option v-for="source in sources" :key="source.id" :value="source.id">{{ source.name }}</option>
                 </select>
-                <div v-if="validationErrors.source_id" class="form-error">{{ validationErrors.source_id[0] }}</div>
+                <div v-if="validationErrors.source_id" class="invalid-feedback">{{ validationErrors.source_id[0] }}</div>
               </div>
 
               <div class="row g-3 mb-3">
                 <div class="col-6">
                   <label class="form-label" for="lead-status">Status</label>
-                  <select id="lead-status" v-model="form.status_id" class="form-select">
+                  <select
+                    id="lead-status"
+                    v-model="form.status_id"
+                    :class="['form-select', { 'is-invalid': validationErrors.status_id }]"
+                    @change="clearError('status_id')"
+                  >
                     <option value="">— Select Status —</option>
                     <option v-for="status in statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
                   </select>
-                  <div v-if="validationErrors.status_id" class="form-error">{{ validationErrors.status_id[0] }}</div>
+                  <div v-if="validationErrors.status_id" class="invalid-feedback">{{ validationErrors.status_id[0] }}</div>
                 </div>
                 <div class="col-6">
                   <label class="form-label" for="lead-stage">Pipeline Stage</label>
-                  <select id="lead-stage" v-model="form.stage_id" class="form-select">
+                  <select
+                    id="lead-stage"
+                    v-model="form.stage_id"
+                    :class="['form-select', { 'is-invalid': validationErrors.stage_id }]"
+                    @change="clearError('stage_id')"
+                  >
                     <option value="">— Select Stage —</option>
                     <option v-for="stage in stages" :key="stage.id" :value="stage.id">{{ stage.name }}</option>
                   </select>
-                  <div v-if="validationErrors.stage_id" class="form-error">{{ validationErrors.stage_id[0] }}</div>
+                  <div v-if="validationErrors.stage_id" class="invalid-feedback">{{ validationErrors.stage_id[0] }}</div>
                 </div>
               </div>
 
@@ -117,18 +183,31 @@
                 </div>
                 <div class="col-6">
                   <label class="form-label" for="lead-value">Est. Value (₹)</label>
-                  <input id="lead-value" v-model="form.expected_value" type="number" class="form-control" placeholder="10000" min="0" />
-                  <div v-if="validationErrors.expected_value" class="form-error">{{ validationErrors.expected_value[0] }}</div>
+                  <input
+                    id="lead-value"
+                    v-model="form.expected_value"
+                    type="number"
+                    :class="['form-control', { 'is-invalid': validationErrors.expected_value }]"
+                    placeholder="10000"
+                    min="0"
+                    @input="clearError('expected_value')"
+                  />
+                  <div v-if="validationErrors.expected_value" class="invalid-feedback">{{ validationErrors.expected_value[0] }}</div>
                 </div>
               </div>
 
               <div class="mb-0">
                 <label class="form-label" for="lead-assigned">Assigned Executive</label>
-                <select id="lead-assigned" v-model="form.assigned_to" class="form-select">
+                <select
+                  id="lead-assigned"
+                  v-model="form.assigned_to"
+                  :class="['form-select', { 'is-invalid': validationErrors.assigned_to }]"
+                  @change="clearError('assigned_to')"
+                >
                   <option value="">— Unassigned —</option>
                   <option v-for="user in teamMembers" :key="user.id" :value="user.id">{{ user.name }}</option>
                 </select>
-                <div v-if="validationErrors.assigned_to" class="form-error">{{ validationErrors.assigned_to[0] }}</div>
+                <div v-if="validationErrors.assigned_to" class="invalid-feedback">{{ validationErrors.assigned_to[0] }}</div>
               </div>
             </div>
           </div>
@@ -144,11 +223,12 @@
             <div class="card-body">
               <textarea
                 v-model="form.requirement"
-                class="form-control"
+                :class="['form-control', { 'is-invalid': validationErrors.requirement }]"
                 rows="3"
                 placeholder="Describe client's requirements, product interest, or other relevant details..."
+                @input="clearError('requirement')"
               ></textarea>
-              <div v-if="validationErrors.requirement" class="form-error">{{ validationErrors.requirement[0] }}</div>
+              <div v-if="validationErrors.requirement" class="invalid-feedback">{{ validationErrors.requirement[0] }}</div>
             </div>
           </div>
         </div>
@@ -164,13 +244,25 @@
               <div class="row g-3">
                 <div class="col-12 col-sm-6">
                   <label class="form-label" for="followup-date">Follow-up Date</label>
-                  <input id="followup-date" v-model="form.next_follow_up_date" type="date" class="form-control" />
-                  <div v-if="validationErrors.next_follow_up_date" class="form-error">{{ validationErrors.next_follow_up_date[0] }}</div>
+                  <input
+                    id="followup-date"
+                    v-model="form.next_follow_up_date"
+                    type="date"
+                    :class="['form-control', { 'is-invalid': validationErrors.next_follow_up_date }]"
+                    @change="clearError('next_follow_up_date')"
+                  />
+                  <div v-if="validationErrors.next_follow_up_date" class="invalid-feedback">{{ validationErrors.next_follow_up_date[0] }}</div>
                 </div>
                 <div class="col-12 col-sm-6">
                   <label class="form-label" for="followup-time">Follow-up Time</label>
-                  <input id="followup-time" v-model="form.next_follow_up_time" type="time" class="form-control" />
-                  <div v-if="validationErrors.next_follow_up_time" class="form-error">{{ validationErrors.next_follow_up_time[0] }}</div>
+                  <input
+                    id="followup-time"
+                    v-model="form.next_follow_up_time"
+                    type="time"
+                    :class="['form-control', { 'is-invalid': validationErrors.next_follow_up_time }]"
+                    @change="clearError('next_follow_up_time')"
+                  />
+                  <div v-if="validationErrors.next_follow_up_time" class="invalid-feedback">{{ validationErrors.next_follow_up_time[0] }}</div>
                 </div>
               </div>
             </div>
@@ -210,6 +302,12 @@ const toast = useToast();
 const saving = ref(false);
 const validationErrors = ref({});
 
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
+
 const sources = ref([]);
 const statuses = ref([]);
 const stages = ref([]);
@@ -236,19 +334,30 @@ const form = reactive({
 
 const loadDropdowns = async () => {
   try {
-    const resStatus = await settingsApi.getStatuses();
-    statuses.value = resStatus.data.statuses;
-    if (statuses.value.length) form.status_id = statuses.value[0].id;
+    const [resStatus, resStages, resSources, resUsers] = await Promise.allSettled([
+      settingsApi.getStatuses(),
+      settingsApi.getStages(),
+      settingsApi.getSources(),
+      usersApi.getUsers()
+    ]);
 
-    const resStages = await settingsApi.getStages();
-    stages.value = resStages.data.stages;
-    if (stages.value.length) form.stage_id = stages.value[0].id;
+    if (resStatus.status === 'fulfilled') {
+      statuses.value = resStatus.value.data.statuses || [];
+      if (statuses.value.length && !form.status_id) form.status_id = statuses.value[0].id;
+    }
 
-    const resSources = await settingsApi.getSources();
-    sources.value = resSources.data.sources;
+    if (resStages.status === 'fulfilled') {
+      stages.value = resStages.value.data.stages || [];
+      if (stages.value.length && !form.stage_id) form.stage_id = stages.value[0].id;
+    }
 
-    const resUsers = await usersApi.getUsers();
-    teamMembers.value = resUsers.data.users.filter(u => u.is_active);
+    if (resSources.status === 'fulfilled') {
+      sources.value = resSources.value.data.sources || [];
+    }
+
+    if (resUsers.status === 'fulfilled') {
+      teamMembers.value = (resUsers.value.data.users || []).filter(u => u.is_active);
+    }
   } catch (err) {
     toast.error('Failed to load form initialization data.');
   }
@@ -272,11 +381,15 @@ const saveLead = async () => {
     toast.success('Lead registered successfully.');
     router.push('/leads');
   } catch (err) {
-    if (err.errors) {
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Validation failed. Please correct input fields.');
+    } else if (err.errors) {
       validationErrors.value = err.errors;
       toast.error('Validation failed. Please correct input fields.');
     } else {
-      toast.error(err.message || 'Failed to save lead.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to save lead.');
     }
   } finally {
     saving.value = false;

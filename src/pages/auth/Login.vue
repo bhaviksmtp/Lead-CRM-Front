@@ -14,13 +14,14 @@
           id="login-email"
           v-model="form.email"
           type="email"
-          class="form-control"
+          :class="['form-control', { 'is-invalid': validationErrors.email }]"
           placeholder="admin@convera.com"
           autocomplete="email"
+          @input="clearError('email')"
           required
         />
       </div>
-      <div v-if="validationErrors.email" class="form-error">{{ validationErrors.email[0] }}</div>
+      <div v-if="validationErrors.email" class="invalid-feedback">{{ validationErrors.email[0] }}</div>
     </div>
 
     <div class="mb-4">
@@ -31,13 +32,14 @@
           id="login-password"
           v-model="form.password"
           type="password"
-          class="form-control"
+          :class="['form-control', { 'is-invalid': validationErrors.password }]"
           placeholder="Enter your password"
           autocomplete="current-password"
+          @input="clearError('password')"
           required
         />
       </div>
-      <div v-if="validationErrors.password" class="form-error">{{ validationErrors.password[0] }}</div>
+      <div v-if="validationErrors.password" class="invalid-feedback">{{ validationErrors.password[0] }}</div>
     </div>
 
     <button type="submit" class="btn btn-primary w-100 py-2 justify-content-center" :disabled="loading" id="login-submit-btn">
@@ -67,6 +69,12 @@ const loading = ref(false);
 const error = ref(null);
 const validationErrors = ref({});
 
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
+
 const handleLogin = async () => {
   loading.value = true;
   error.value = null;
@@ -76,10 +84,12 @@ const handleLogin = async () => {
     await authStore.login(form);
     router.push('/dashboard');
   } catch (err) {
-    if (err.errors) {
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+    } else if (err.errors) {
       validationErrors.value = err.errors;
     } else {
-      error.value = err.message || 'Authentication failed. Please verify credentials.';
+      error.value = err.response?.data?.message || err.message || 'Authentication failed. Please verify credentials.';
     }
   } finally {
     loading.value = false;

@@ -85,7 +85,15 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Status Name *</label>
-              <input v-model="form.name" type="text" class="form-control" placeholder="e.g. Contacted" required />
+              <input
+                v-model="form.name"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.name }]"
+                placeholder="e.g. Contacted"
+                @input="clearError('name')"
+                required
+              />
+              <div v-if="validationErrors.name" class="invalid-feedback">{{ validationErrors.name[0] }}</div>
             </div>
             <div class="mb-0 d-flex align-items-center gap-3">
               <label class="toggle-switch">
@@ -97,8 +105,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" @click="showModal = false" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-floppy"></i> Save Status
+            <button type="submit" class="btn btn-primary" :disabled="saving">
+              <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-floppy"></i>
+              Save Status
             </button>
           </div>
         </form>
@@ -111,19 +121,29 @@
 import { ref, reactive, onMounted } from 'vue';
 import settingsApi from '@/api/settings';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const loading = ref(true);
+const saving = ref(false);
 const statuses = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);
+const validationErrors = ref({});
 
 const form = reactive({
   name: '',
   is_active: true
 });
+
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
 
 const loadStatuses = async () => {
   try {
@@ -144,6 +164,7 @@ const openCreateModal = () => {
   activeId.value = null;
   form.name = '';
   form.is_active = true;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
@@ -152,10 +173,13 @@ const openEditModal = (status) => {
   activeId.value = status.id;
   form.name = status.name;
   form.is_active = status.is_active;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
 const submitForm = async () => {
+  saving.value = true;
+  validationErrors.value = {};
   try {
     if (isEdit.value) {
       await settingsApi.updateStatus(activeId.value, form);
@@ -167,18 +191,27 @@ const submitForm = async () => {
     showModal.value = false;
     loadStatuses();
   } catch (err) {
-    toast.error('Failed to save status.');
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to save status.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save status.');
+    }
+  } finally {
+    saving.value = false;
   }
 };
 
 const deleteConfirm = async (status) => {
-  if (confirm(`Delete status: ${status.name}?`)) {
+  const confirmed = await confirmDelete(`status "${status.name}"`);
+  if (confirmed) {
     try {
       await settingsApi.deleteStatus(status.id);
       toast.success('Status deleted.');
       loadStatuses();
     } catch (err) {
-      toast.error('Failed to delete status.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete status.');
     }
   }
 };

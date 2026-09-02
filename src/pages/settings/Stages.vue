@@ -92,11 +92,28 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Stage Name *</label>
-              <input v-model="form.name" type="text" class="form-control" placeholder="e.g. Quotation Sent" required />
+              <input
+                v-model="form.name"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.name }]"
+                placeholder="e.g. Quotation Sent"
+                @input="clearError('name')"
+                required
+              />
+              <div v-if="validationErrors.name" class="invalid-feedback">{{ validationErrors.name[0] }}</div>
             </div>
             <div class="mb-3">
               <label class="form-label">Position Index * <small class="text-muted-custom">(ascending order on board)</small></label>
-              <input v-model="form.position" type="number" class="form-control" placeholder="e.g. 3" min="1" required />
+              <input
+                v-model="form.position"
+                type="number"
+                :class="['form-control', { 'is-invalid': validationErrors.position }]"
+                placeholder="e.g. 3"
+                min="1"
+                @input="clearError('position')"
+                required
+              />
+              <div v-if="validationErrors.position" class="invalid-feedback">{{ validationErrors.position[0] }}</div>
             </div>
             <div class="mb-0 d-flex align-items-center gap-3">
               <label class="toggle-switch">
@@ -108,8 +125,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" @click="showModal = false" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-floppy"></i> Save Stage
+            <button type="submit" class="btn btn-primary" :disabled="saving">
+              <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-floppy"></i>
+              Save Stage
             </button>
           </div>
         </form>
@@ -122,20 +141,30 @@
 import { ref, reactive, onMounted } from 'vue';
 import settingsApi from '@/api/settings';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const loading = ref(true);
+const saving = ref(false);
 const stages = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);
+const validationErrors = ref({});
 
 const form = reactive({
   name: '',
   position: '',
   is_active: true
 });
+
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
 
 const loadStages = async () => {
   try {
@@ -157,6 +186,7 @@ const openCreateModal = () => {
   form.name = '';
   form.position = stages.value.length + 1;
   form.is_active = true;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
@@ -166,10 +196,13 @@ const openEditModal = (stage) => {
   form.name = stage.name;
   form.position = stage.position;
   form.is_active = stage.is_active;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
 const submitForm = async () => {
+  saving.value = true;
+  validationErrors.value = {};
   try {
     if (isEdit.value) {
       await settingsApi.updateStage(activeId.value, form);
@@ -181,18 +214,27 @@ const submitForm = async () => {
     showModal.value = false;
     loadStages();
   } catch (err) {
-    toast.error('Failed to save stage.');
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to save stage.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save stage.');
+    }
+  } finally {
+    saving.value = false;
   }
 };
 
 const deleteConfirm = async (stage) => {
-  if (confirm(`Delete stage: ${stage.name}?`)) {
+  const confirmed = await confirmDelete(`stage "${stage.name}"`);
+  if (confirmed) {
     try {
       await settingsApi.deleteStage(stage.id);
       toast.success('Stage deleted.');
       loadStages();
     } catch (err) {
-      toast.error('Failed to delete stage.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete stage.');
     }
   }
 };

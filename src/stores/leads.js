@@ -41,8 +41,6 @@ export const useLeadsStore = defineStore('leads', {
       try {
         const response = await leadsApi.createLead(data);
         return response.data;
-      } catch (err) {
-        throw err;
       } finally {
         this.loading = false;
       }
@@ -53,8 +51,6 @@ export const useLeadsStore = defineStore('leads', {
         const response = await leadsApi.updateLead(id, data);
         this.currentLead = response.data.lead;
         return response.data;
-      } catch (err) {
-        throw err;
       } finally {
         this.loading = false;
       }
@@ -64,8 +60,6 @@ export const useLeadsStore = defineStore('leads', {
       try {
         await leadsApi.deleteLead(id);
         this.leads = this.leads.filter(l => l.id !== id);
-      } catch (err) {
-        throw err;
       } finally {
         this.loading = false;
       }
@@ -79,31 +73,19 @@ export const useLeadsStore = defineStore('leads', {
       }
     },
     async addNote(id, note) {
-      try {
-        const response = await leadsApi.addNote(id, note);
-        await this.fetchTimeline(id);
-        return response.data;
-      } catch (err) {
-        throw err;
-      }
+      const response = await leadsApi.addNote(id, note);
+      await this.fetchTimeline(id);
+      return response.data;
     },
     async markWon(id) {
-      try {
-        const response = await leadsApi.markWon(id);
-        this.currentLead = response.data.lead;
-        return response.data;
-      } catch (err) {
-        throw err;
-      }
+      const response = await leadsApi.markWon(id);
+      this.currentLead = response.data.lead;
+      return response.data;
     },
     async markLost(id, reason) {
-      try {
-        const response = await leadsApi.markLost(id, { lost_reason: reason });
-        this.currentLead = response.data.lead;
-        return response.data;
-      } catch (err) {
-        throw err;
-      }
+      const response = await leadsApi.markLost(id, { lost_reason: reason });
+      this.currentLead = response.data.lead;
+      return response.data;
     }
   }
 });

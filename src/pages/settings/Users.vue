@@ -111,36 +111,76 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Full Name *</label>
-              <input v-model="form.name" type="text" class="form-control" required />
+              <input
+                v-model="form.name"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.name }]"
+                @input="clearError('name')"
+                required
+              />
+              <div v-if="validationErrors.name" class="invalid-feedback">{{ validationErrors.name[0] }}</div>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Email Address *</label>
-              <input v-model="form.email" type="email" class="form-control" required />
+              <input
+                v-model="form.email"
+                type="email"
+                :class="['form-control', { 'is-invalid': validationErrors.email }]"
+                @input="clearError('email')"
+                required
+              />
+              <div v-if="validationErrors.email" class="invalid-feedback">{{ validationErrors.email[0] }}</div>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Mobile Number</label>
-              <input v-model="form.phone" type="text" class="form-control" />
+              <input
+                v-model="form.phone"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.phone }]"
+                @input="clearError('phone')"
+              />
+              <div v-if="validationErrors.phone" class="invalid-feedback">{{ validationErrors.phone[0] }}</div>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Access Role *</label>
-              <select v-model="form.role" class="form-select" required>
+              <select
+                v-model="form.role"
+                :class="['form-select', { 'is-invalid': validationErrors.role }]"
+                @change="clearError('role')"
+                required
+              >
                 <option v-for="r in roles" :key="r.id" :value="r.name">
                   {{ r.name }}
                 </option>
               </select>
+              <div v-if="validationErrors.role" class="invalid-feedback">{{ validationErrors.role[0] }}</div>
             </div>
 
             <div v-if="!isEdit" class="mb-3">
               <label class="form-label">Access Password *</label>
-              <input v-model="form.password" type="password" class="form-control" required />
+              <input
+                v-model="form.password"
+                type="password"
+                :class="['form-control', { 'is-invalid': validationErrors.password }]"
+                @input="clearError('password')"
+                required
+              />
+              <div v-if="validationErrors.password" class="invalid-feedback">{{ validationErrors.password[0] }}</div>
             </div>
 
             <div v-if="!isEdit" class="mb-3">
               <label class="form-label">Confirm Password *</label>
-              <input v-model="form.password_confirmation" type="password" class="form-control" required />
+              <input
+                v-model="form.password_confirmation"
+                type="password"
+                :class="['form-control', { 'is-invalid': validationErrors.password_confirmation }]"
+                @input="clearError('password_confirmation')"
+                required
+              />
+              <div v-if="validationErrors.password_confirmation" class="invalid-feedback">{{ validationErrors.password_confirmation[0] }}</div>
             </div>
 
             <div v-if="isEdit && currentUser.id !== activeId" class="mb-0 d-flex align-items-center gap-3">
@@ -153,8 +193,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" @click="showModal = false" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-check-lg"></i> {{ isEdit ? 'Update Member' : 'Add Member' }}
+            <button type="submit" class="btn btn-primary" :disabled="saving">
+              <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-check-lg"></i>
+              {{ isEdit ? 'Update Member' : 'Add Member' }}
             </button>
           </div>
         </form>
@@ -169,16 +211,20 @@ import { useAuthStore } from '@/stores/auth';
 import usersApi from '@/api/users';
 import rolesApi from '@/api/roles';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const authStore = useAuthStore();
 const toast = useToast();
+const { confirmDeactivate } = useSwal();
 
 const loading = ref(true);
+const saving = ref(false);
 const users = ref([]);
 const roles = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);
+const validationErrors = ref({});
 
 const currentUser = computed(() => authStore.user);
 
@@ -191,6 +237,12 @@ const form = reactive({
   password_confirmation: '',
   is_active: true
 });
+
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
 
 const loadUsers = async () => {
   try {
@@ -228,6 +280,7 @@ const openCreateModal = () => {
   form.password = '';
   form.password_confirmation = '';
   form.is_active = true;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
@@ -239,37 +292,50 @@ const openEditModal = (user) => {
   form.phone = user.phone || '';
   form.role = user.roles?.[0] || 'Salesperson';
   form.is_active = user.is_active;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
 const submitForm = async () => {
+  validationErrors.value = {};
+  if (!isEdit.value && form.password !== form.password_confirmation) {
+    validationErrors.value.password_confirmation = ['Passwords do not match.'];
+    toast.error('Passwords do not match.');
+    return;
+  }
+  saving.value = true;
   try {
     if (isEdit.value) {
       await usersApi.updateUser(activeId.value, form);
       toast.success('User updated successfully.');
     } else {
-      if (form.password !== form.password_confirmation) {
-        toast.error('Passwords do not match.');
-        return;
-      }
       await usersApi.createUser(form);
       toast.success('User registered successfully.');
     }
     showModal.value = false;
     loadUsers();
   } catch (err) {
-    toast.error(err.response?.data?.message || err.message || 'Failed to save user.');
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to save user.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save user.');
+    }
+  } finally {
+    saving.value = false;
   }
 };
 
 const deactivateUser = async (user) => {
-  if (confirm(`Deactivate account for: ${user.name}?`)) {
+  const confirmed = await confirmDeactivate(user.name);
+  if (confirmed) {
     try {
       await usersApi.deleteUser(user.id);
       toast.success('User deactivated.');
       loadUsers();
     } catch (err) {
-      toast.error('Failed to deactivate user.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to deactivate user.');
     }
   }
 };

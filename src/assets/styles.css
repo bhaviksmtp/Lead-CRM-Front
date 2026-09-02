@@ -136,8 +136,21 @@ body {
   letter-spacing: 0.01em;
 }
 
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px var(--danger-light) !important;
+}
+
 .form-error,
-.invalid-feedback { color: var(--danger); font-size: 0.75rem; margin-top: 0.25rem; }
+.invalid-feedback {
+  display: block;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.35rem;
+  line-height: 1.3;
+}
 
 .input-group-text {
   background-color: var(--bg-tertiary) !important;
@@ -1653,3 +1666,119 @@ code {
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ============================================================
+   32. TOAST NOTIFICATIONS
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  max-width: 400px;
+  width: calc(100vw - 2.5rem);
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1 !important;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast.toast-success {
+  border-left: 4px solid var(--won);
+}
+
+.toast.toast-danger {
+  border-left: 4px solid var(--danger);
+}
+
+.toast.toast-warning {
+  border-left: 4px solid var(--warning);
+}
+
+.toast.toast-info {
+  border-left: 4px solid var(--primary);
+}
+
+/* ============================================================
+   SWEETALERT2 CUSTOM CRM THEME
+   ============================================================ */
+.crm-swal-popup {
+  font-family: var(--font-sans) !important;
+  border-radius: var(--radius-xl) !important;
+  padding: 1.75rem 1.5rem !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid var(--border-color) !important;
+  background-color: #ffffff !important;
+  color: var(--text-primary) !important;
+}
+
+.crm-swal-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  padding: 0.5rem 1rem 0 !important;
+}
+
+.crm-swal-text {
+  font-size: 0.9rem !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.5 !important;
+  margin: 0.75rem 0 1.25rem !important;
+}
+
+.crm-swal-actions {
+  gap: 0.75rem !important;
+  margin: 1.25rem 0 0 !important;
+  width: 100% !important;
+  justify-content: center !important;
+}
+
+div:where(.swal2-container) .swal2-icon {
+  margin: 0.5rem auto 1rem !important;
+}
+
+div:where(.swal2-icon).swal2-warning {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+div:where(.swal2-icon).swal2-error {
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+}
+
+div:where(.swal2-icon).swal2-success {
+  border-color: var(--won) !important;
+  color: var(--won) !important;
+}
+

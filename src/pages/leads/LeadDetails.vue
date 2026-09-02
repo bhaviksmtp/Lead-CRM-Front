@@ -52,7 +52,7 @@
             <router-link :to="`/leads/${lead.id}/edit`" class="btn btn-secondary btn-sm" title="Edit Lead">
               <i class="bi bi-pencil"></i> Edit
             </router-link>
-            <button @click="confirmDelete" class="btn btn-danger btn-sm" title="Delete Lead">
+            <button @click="confirmDeleteAction" class="btn btn-danger btn-sm" title="Delete Lead">
               <i class="bi bi-trash3"></i> Delete
             </button>
           </div>
@@ -229,17 +229,21 @@
             <label class="form-label">Lost Reason *</label>
             <textarea
               v-model="lostReason"
-              class="form-control"
+              :class="['form-control', { 'is-invalid': lostReasonError }]"
               rows="3"
               placeholder="e.g. Higher pricing than competitors / Customer cancelled project"
+              @input="lostReasonError = ''"
               required
             ></textarea>
+            <div v-if="lostReasonError" class="invalid-feedback">{{ lostReasonError }}</div>
           </div>
         </div>
         <div class="modal-footer">
           <button @click="showLostModal = false" class="btn btn-secondary">Cancel</button>
-          <button @click="submitLost" class="btn btn-danger" :disabled="!lostReason.trim()">
-            <i class="bi bi-x-circle"></i> Confirm Lost
+          <button @click="submitLost" class="btn btn-danger" :disabled="submittingLost">
+            <span v-if="submittingLost" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i v-else class="bi bi-x-circle"></i>
+            Confirm Lost
           </button>
         </div>
       </div>
@@ -258,27 +262,49 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Follow-up Type</label>
-            <select v-model="followUpForm.type" class="form-select" required>
+            <select
+              v-model="followUpForm.type"
+              :class="['form-select', { 'is-invalid': followUpErrors.type }]"
+              @change="clearFollowUpError('type')"
+              required
+            >
               <option value="whatsapp">WhatsApp Message</option>
               <option value="call">Phone Call</option>
               <option value="email">Email Message</option>
               <option value="meeting">In-Person Meeting</option>
               <option value="other">Other</option>
             </select>
+            <div v-if="followUpErrors.type" class="invalid-feedback">{{ followUpErrors.type[0] }}</div>
           </div>
           <div class="mb-3">
-            <label class="form-label">Date &amp; Time</label>
-            <input v-model="followUpForm.scheduled_at" type="datetime-local" class="form-control" required />
+            <label class="form-label">Date &amp; Time *</label>
+            <input
+              v-model="followUpForm.scheduled_at"
+              type="datetime-local"
+              :class="['form-control', { 'is-invalid': followUpErrors.scheduled_at }]"
+              @input="clearFollowUpError('scheduled_at')"
+              required
+            />
+            <div v-if="followUpErrors.scheduled_at" class="invalid-feedback">{{ followUpErrors.scheduled_at[0] }}</div>
           </div>
           <div class="mb-3">
             <label class="form-label">Notes / Remarks</label>
-            <textarea v-model="followUpForm.notes" class="form-control" rows="3" placeholder="Specific notes on this task..."></textarea>
+            <textarea
+              v-model="followUpForm.notes"
+              :class="['form-control', { 'is-invalid': followUpErrors.notes }]"
+              rows="3"
+              placeholder="Specific notes on this task..."
+              @input="clearFollowUpError('notes')"
+            ></textarea>
+            <div v-if="followUpErrors.notes" class="invalid-feedback">{{ followUpErrors.notes[0] }}</div>
           </div>
         </div>
         <div class="modal-footer">
           <button @click="showScheduleModal = false" class="btn btn-secondary">Cancel</button>
-          <button @click="submitFollowUp" class="btn btn-primary">
-            <i class="bi bi-calendar-check"></i> Schedule Task
+          <button @click="submitFollowUp" class="btn btn-primary" :disabled="submittingFollowUp">
+            <span v-if="submittingFollowUp" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i v-else class="bi bi-calendar-check"></i>
+            Schedule Task
           </button>
         </div>
       </div>
@@ -293,13 +319,15 @@ import { useLeadsStore } from '@/stores/leads';
 import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const route = useRoute();
 const router = useRouter();
 const leadsStore = useLeadsStore();
 const followUpsStore = useFollowUpsStore();
-const { formatCurrency, formatDate, formatDateTime, formatPhone } = useIndianFormat();
+const { formatCurrency, formatDate, formatDateTime } = useIndianFormat();
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const loading = ref(true);
 const lead = computed(() => leadsStore.currentLead);
@@ -308,13 +336,23 @@ const timeline = computed(() => leadsStore.timeline);
 const newNote = ref('');
 const showLostModal = ref(false);
 const lostReason = ref('');
-const showScheduleModal = ref(false);
+const lostReasonError = ref('');
+const submittingLost = ref(false);
 
+const showScheduleModal = ref(false);
+const submittingFollowUp = ref(false);
+const followUpErrors = ref({});
 const followUpForm = reactive({
   type: 'call',
   scheduled_at: '',
   notes: ''
 });
+
+const clearFollowUpError = (field) => {
+  if (followUpErrors.value[field]) {
+    delete followUpErrors.value[field];
+  }
+};
 
 const loadLeadDetails = async () => {
   try {
@@ -344,62 +382,85 @@ const markWon = async () => {
     toast.success('Lead marked as closed WON!');
     loadLeadDetails();
   } catch (err) {
-    toast.error('Failed to update stage to Won.');
+    toast.error(err.response?.data?.message || 'Failed to update stage to Won.');
   }
 };
 
 const openLostModal = () => {
   lostReason.value = '';
+  lostReasonError.value = '';
   showLostModal.value = true;
 };
 
 const submitLost = async () => {
+  if (!lostReason.value.trim()) {
+    lostReasonError.value = 'Please provide a reason for losing this lead.';
+    toast.error('Lost reason is required.');
+    return;
+  }
+  submittingLost.value = true;
   try {
-    await leadsStore.markLost(lead.value.id, lostReason.value);
+    await leadsStore.markLost(lead.value.id, lostReason.value.trim());
     toast.success('Lead marked as lost.');
     showLostModal.value = false;
     loadLeadDetails();
   } catch (err) {
-    toast.error('Failed to update stage to Lost.');
+    toast.error(err.response?.data?.message || err.message || 'Failed to update stage to Lost.');
+  } finally {
+    submittingLost.value = false;
   }
 };
 
 const submitNote = async () => {
+  if (!newNote.value.trim()) return;
   try {
-    await leadsStore.addNote(lead.value.id, newNote.value);
+    await leadsStore.addNote(lead.value.id, newNote.value.trim());
     toast.success('Note added successfully.');
     newNote.value = '';
   } catch (err) {
-    toast.error('Failed to save note.');
+    toast.error(err.response?.data?.message || err.message || 'Failed to save note.');
   }
 };
 
 const submitFollowUp = async () => {
+  followUpErrors.value = {};
   if (!followUpForm.scheduled_at) {
+    followUpErrors.value.scheduled_at = ['Please select a date and time for follow-up.'];
     toast.error('Please select date and time.');
     return;
   }
+  submittingFollowUp.value = true;
   try {
     await followUpsStore.createFollowUp({
       lead_id: lead.value.id,
+      assigned_to: lead.value.assigned_to || undefined,
       ...followUpForm
     });
     toast.success('Follow-up task scheduled.');
     showScheduleModal.value = false;
     loadLeadDetails();
   } catch (err) {
-    toast.error('Failed to create follow-up task.');
+    if (err.response?.data?.errors) {
+      followUpErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to create follow-up task.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to create follow-up task.');
+    }
+  } finally {
+    submittingFollowUp.value = false;
   }
 };
 
-const confirmDelete = async () => {
-  if (confirm('Are you sure you want to delete this lead?')) {
+const confirmDeleteAction = async () => {
+  const confirmed = await confirmDelete(`lead "${lead.value.name}"`);
+  if (confirmed) {
     try {
       await leadsStore.deleteLead(lead.value.id);
       toast.success('Lead deleted.');
       router.push('/leads');
     } catch (err) {
-      toast.error('Failed to delete lead.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete lead.');
     }
   }
 };

@@ -198,27 +198,49 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Follow-up Type</label>
-            <select v-model="followUpForm.type" class="form-select" required>
+            <select
+              v-model="followUpForm.type"
+              :class="['form-select', { 'is-invalid': followUpErrors.type }]"
+              @change="clearFollowUpError('type')"
+              required
+            >
               <option value="whatsapp">WhatsApp Message</option>
               <option value="call">Phone Call</option>
               <option value="email">Email Message</option>
               <option value="meeting">In-Person Meeting</option>
               <option value="other">Other</option>
             </select>
+            <div v-if="followUpErrors.type" class="invalid-feedback">{{ followUpErrors.type[0] }}</div>
           </div>
           <div class="mb-3">
-            <label class="form-label">Date &amp; Time</label>
-            <input v-model="followUpForm.scheduled_at" type="datetime-local" class="form-control" required />
+            <label class="form-label">Date &amp; Time *</label>
+            <input
+              v-model="followUpForm.scheduled_at"
+              type="datetime-local"
+              :class="['form-control', { 'is-invalid': followUpErrors.scheduled_at }]"
+              @input="clearFollowUpError('scheduled_at')"
+              required
+            />
+            <div v-if="followUpErrors.scheduled_at" class="invalid-feedback">{{ followUpErrors.scheduled_at[0] }}</div>
           </div>
           <div class="mb-3">
             <label class="form-label">Notes / Remarks</label>
-            <textarea v-model="followUpForm.notes" class="form-control" rows="3" placeholder="Specific notes on this task..."></textarea>
+            <textarea
+              v-model="followUpForm.notes"
+              :class="['form-control', { 'is-invalid': followUpErrors.notes }]"
+              rows="3"
+              placeholder="Specific notes on this task..."
+              @input="clearFollowUpError('notes')"
+            ></textarea>
+            <div v-if="followUpErrors.notes" class="invalid-feedback">{{ followUpErrors.notes[0] }}</div>
           </div>
         </div>
         <div class="modal-footer">
           <button @click="showFollowUpModal = false" class="btn btn-secondary">Cancel</button>
-          <button @click="submitFollowUp" class="btn btn-primary">
-            <i class="bi bi-calendar-check"></i> Schedule Task
+          <button @click="submitFollowUp" class="btn btn-primary" :disabled="submittingFollowUp">
+            <span v-if="submittingFollowUp" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i v-else class="bi bi-calendar-check"></i>
+            Schedule Task
           </button>
         </div>
       </div>
@@ -233,6 +255,7 @@ import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
 import { useWhatsApp } from '@/composables/useWhatsApp';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 import settingsApi from '@/api/settings';
 
 const leadsStore = useLeadsStore();
@@ -240,6 +263,7 @@ const followUpsStore = useFollowUpsStore();
 const { formatCurrency, formatPhone } = useIndianFormat();
 const { openWhatsApp } = useWhatsApp();
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const loading = computed(() => leadsStore.loading);
 const leads = computed(() => leadsStore.leads);
@@ -260,11 +284,19 @@ const sources = ref([]);
 
 const showFollowUpModal = ref(false);
 const activeLead = ref(null);
+const submittingFollowUp = ref(false);
+const followUpErrors = ref({});
 const followUpForm = reactive({
   type: 'call',
   scheduled_at: '',
   notes: ''
 });
+
+const clearFollowUpError = (field) => {
+  if (followUpErrors.value[field]) {
+    delete followUpErrors.value[field];
+  }
+};
 
 const loadLeads = async () => {
   try {
@@ -326,35 +358,49 @@ const openFollowUpModal = (lead) => {
   followUpForm.type = 'call';
   followUpForm.scheduled_at = '';
   followUpForm.notes = '';
+  followUpErrors.value = {};
   showFollowUpModal.value = true;
 };
 
 const submitFollowUp = async () => {
+  followUpErrors.value = {};
   if (!followUpForm.scheduled_at) {
+    followUpErrors.value.scheduled_at = ['Please select a date and time for follow-up.'];
     toast.error('Please select date and time.');
     return;
   }
+  submittingFollowUp.value = true;
   try {
     await followUpsStore.createFollowUp({
       lead_id: activeLead.value.id,
+      assigned_to: activeLead.value.assigned_to || undefined,
       ...followUpForm
     });
     toast.success('Follow-up scheduled successfully.');
     showFollowUpModal.value = false;
     loadLeads();
   } catch (err) {
-    toast.error('Failed to create follow-up task.');
+    if (err.response?.data?.errors) {
+      followUpErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to create follow-up task.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to create follow-up task.');
+    }
+  } finally {
+    submittingFollowUp.value = false;
   }
 };
 
 const deleteConfirm = async (lead) => {
-  if (confirm(`Are you sure you want to delete lead: ${lead.name}?`)) {
+  const confirmed = await confirmDelete(`lead "${lead.name}"`);
+  if (confirmed) {
     try {
       await leadsStore.deleteLead(lead.id);
       toast.success('Lead deleted successfully.');
       loadLeads();
     } catch (err) {
-      toast.error('Failed to delete lead.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete lead.');
     }
   }
 };

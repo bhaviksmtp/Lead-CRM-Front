@@ -28,17 +28,40 @@
             <div class="card-body">
               <div class="mb-3">
                 <label class="form-label" for="company-name">Business Name *</label>
-                <input id="company-name" v-model="form.name" type="text" class="form-control" required />
+                <input
+                  id="company-name"
+                  v-model="form.name"
+                  type="text"
+                  :class="['form-control', { 'is-invalid': validationErrors.name }]"
+                  @input="clearError('name')"
+                  required
+                />
+                <div v-if="validationErrors.name" class="invalid-feedback">{{ validationErrors.name[0] }}</div>
               </div>
 
               <div class="mb-3">
                 <label class="form-label" for="company-email">Email Address *</label>
-                <input id="company-email" v-model="form.email" type="email" class="form-control" required />
+                <input
+                  id="company-email"
+                  v-model="form.email"
+                  type="email"
+                  :class="['form-control', { 'is-invalid': validationErrors.email }]"
+                  @input="clearError('email')"
+                  required
+                />
+                <div v-if="validationErrors.email" class="invalid-feedback">{{ validationErrors.email[0] }}</div>
               </div>
 
               <div class="mb-3">
                 <label class="form-label" for="company-phone">Contact Phone</label>
-                <input id="company-phone" v-model="form.phone" type="text" class="form-control" />
+                <input
+                  id="company-phone"
+                  v-model="form.phone"
+                  type="text"
+                  :class="['form-control', { 'is-invalid': validationErrors.phone }]"
+                  @input="clearError('phone')"
+                />
+                <div v-if="validationErrors.phone" class="invalid-feedback">{{ validationErrors.phone[0] }}</div>
               </div>
 
               <div class="row g-3 mb-0">
@@ -99,15 +122,20 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
 import { useToast } from '@/composables/useToast';
 import api from '@/api/axios';
 
-const authStore = useAuthStore();
 const toast = useToast();
 
 const loading = ref(true);
 const saving = ref(false);
+const validationErrors = ref({});
+
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
 
 const form = reactive({
   name: '',
@@ -119,18 +147,31 @@ const form = reactive({
 
 const loadCompany = async () => {
   try {
-    const response = await api.get('/user');
-    const user = response.data.user;
+    const response = await api.get('/company');
+    const company = response.data.company;
 
-    form.name = user.company?.name || 'Convera Enterprises';
-    form.email = user.company?.email || user.email;
-    form.phone = user.company?.phone || user.phone;
-    form.country = user.company?.country || 'IN';
-    form.timezone = user.company?.timezone || 'Asia/Kolkata';
-
-    loading.value = false;
+    if (company) {
+      form.name = company.name || '';
+      form.email = company.email || '';
+      form.phone = company.phone || '';
+      form.country = company.country || 'IN';
+      form.timezone = company.timezone || 'Asia/Kolkata';
+    }
   } catch (err) {
-    toast.error('Failed to load company profile.');
+    // Fallback to user company data if available
+    try {
+      const userRes = await api.get('/user');
+      const user = userRes.data.user;
+      if (user?.company) {
+        form.name = user.company.name || '';
+        form.email = user.company.email || '';
+        form.phone = user.company.phone || '';
+      }
+    } catch {
+      toast.error('Failed to load company profile.');
+    }
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -140,11 +181,27 @@ onMounted(() => {
 
 const updateCompany = async () => {
   saving.value = true;
+  validationErrors.value = {};
   try {
-    // API endpoint simulation for updating company profile
-    toast.success('Company settings saved successfully.');
+    const response = await api.put('/company', {
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+    });
+    if (response.data?.company) {
+      form.name = response.data.company.name;
+      form.email = response.data.company.email;
+      form.phone = response.data.company.phone;
+    }
+    toast.success('Company profile updated successfully.');
   } catch (err) {
-    toast.error('Failed to save settings.');
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to save company settings.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save company settings.');
+    }
   } finally {
     saving.value = false;
   }

@@ -120,7 +120,12 @@
                 >
                   <i class="bi bi-check-lg"></i> Complete
                 </button>
-                <button @click="deleteConfirm(item)" class="btn btn-danger btn-sm" title="Delete">
+                <button
+                  v-if="hasRole(['Super Admin', 'Company Admin'])"
+                  @click="deleteConfirm(item)"
+                  class="btn btn-danger btn-sm"
+                  title="Delete"
+                >
                   <i class="bi bi-trash3"></i>
                 </button>
               </div>
@@ -164,8 +169,10 @@
         </div>
         <div class="modal-footer">
           <button @click="activeModal = null" class="btn btn-secondary">Cancel</button>
-          <button @click="submitComplete" class="btn btn-primary">
-            <i class="bi bi-floppy"></i> Save as Completed
+          <button @click="submitComplete" class="btn btn-primary" :disabled="submittingModal">
+            <span v-if="submittingModal" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i v-else class="bi bi-floppy"></i>
+            Save as Completed
           </button>
         </div>
       </div>
@@ -183,8 +190,15 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">New Date &amp; Time</label>
-            <input v-model="rescheduleDate" type="datetime-local" class="form-control" required />
+            <label class="form-label">New Date &amp; Time *</label>
+            <input
+              v-model="rescheduleDate"
+              type="datetime-local"
+              :class="['form-control', { 'is-invalid': rescheduleDateError }]"
+              @input="rescheduleDateError = ''"
+              required
+            />
+            <div v-if="rescheduleDateError" class="invalid-feedback">{{ rescheduleDateError }}</div>
           </div>
           <div class="mb-3">
             <label class="form-label">Rescheduling Remarks</label>
@@ -198,8 +212,10 @@
         </div>
         <div class="modal-footer">
           <button @click="activeModal = null" class="btn btn-secondary">Cancel</button>
-          <button @click="submitReschedule" class="btn btn-primary">
-            <i class="bi bi-calendar-check"></i> Reschedule Task
+          <button @click="submitReschedule" class="btn btn-primary" :disabled="submittingModal">
+            <span v-if="submittingModal" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i v-else class="bi bi-calendar-check"></i>
+            Reschedule Task
           </button>
         </div>
       </div>
@@ -212,12 +228,16 @@ import { ref, computed, onMounted } from 'vue';
 import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
 import { useWhatsApp } from '@/composables/useWhatsApp';
+import { usePermissions } from '@/composables/usePermissions';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const followUpsStore = useFollowUpsStore();
 const { formatDateTime, formatPhone } = useIndianFormat();
 const { openWhatsApp } = useWhatsApp();
+const { hasRole } = usePermissions();
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const currentTab = ref('today');
 const loading = computed(() => followUpsStore.loading);
@@ -241,12 +261,14 @@ const activeModal = ref(null);
 const selectedItem = ref(null);
 const actionNotes = ref('');
 const rescheduleDate = ref('');
+const rescheduleDateError = ref('');
+const submittingModal = ref(false);
 
 const loadFollowUps = async () => {
   try {
     await followUpsStore.fetchFollowUps({ tab: currentTab.value });
   } catch (err) {
-    toast.error('Failed to load follow-up schedule.');
+    toast.error(err.response?.data?.message || 'Failed to load follow-up schedule.');
   }
 };
 
@@ -280,28 +302,34 @@ const openCompleteModal = (item) => {
 };
 
 const submitComplete = async () => {
+  submittingModal.value = true;
   try {
     await followUpsStore.completeFollowUp(selectedItem.value.id, actionNotes.value);
     toast.success('Follow-up marked completed.');
     activeModal.value = null;
     loadFollowUps();
   } catch (err) {
-    toast.error('Failed to complete follow-up.');
+    toast.error(err.response?.data?.message || err.message || 'Failed to complete follow-up.');
+  } finally {
+    submittingModal.value = false;
   }
 };
 
 const openRescheduleModal = (item) => {
   selectedItem.value = item;
   rescheduleDate.value = '';
+  rescheduleDateError.value = '';
   actionNotes.value = '';
   activeModal.value = 'reschedule';
 };
 
 const submitReschedule = async () => {
   if (!rescheduleDate.value) {
+    rescheduleDateError.value = 'Please specify a new date and time.';
     toast.error('Please specify a new date.');
     return;
   }
+  submittingModal.value = true;
   try {
     await followUpsStore.rescheduleFollowUp(
       selectedItem.value.id,
@@ -312,18 +340,24 @@ const submitReschedule = async () => {
     activeModal.value = null;
     loadFollowUps();
   } catch (err) {
-    toast.error('Failed to reschedule.');
+    if (err.response?.data?.errors?.scheduled_at) {
+      rescheduleDateError.value = err.response.data.errors.scheduled_at[0];
+    }
+    toast.error(err.response?.data?.message || err.message || 'Failed to reschedule.');
+  } finally {
+    submittingModal.value = false;
   }
 };
 
 const deleteConfirm = async (item) => {
-  if (confirm('Are you sure you want to delete this follow-up?')) {
+  const confirmed = await confirmDelete('follow-up task');
+  if (confirmed) {
     try {
       await followUpsStore.deleteFollowUp(item.id);
       toast.success('Follow-up deleted.');
       loadFollowUps();
     } catch (err) {
-      toast.error('Failed to delete.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete follow-up.');
     }
   }
 };

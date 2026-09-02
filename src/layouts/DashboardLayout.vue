@@ -201,6 +201,7 @@
             <div class="d-flex align-items-center gap-2">
               <i v-if="toast.type === 'success'" class="bi bi-check-circle-fill text-won"></i>
               <i v-else-if="toast.type === 'danger'" class="bi bi-exclamation-triangle-fill text-danger-custom"></i>
+              <i v-else-if="toast.type === 'warning'" class="bi bi-exclamation-circle-fill text-warning"></i>
               <i v-else class="bi bi-info-circle-fill text-primary-custom"></i>
               <span>{{ toast.message }}</span>
             </div>
@@ -223,12 +224,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { usePermissions } from '@/composables/usePermissions';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const { can, canAny } = usePermissions();
 const { toasts, removeToast } = useToast();
+const { confirmLogout } = useSwal();
 
 const sidebarOpen = ref(false);
 
@@ -256,7 +259,10 @@ onMounted(async () => {
 });
 
 const handleLogout = async () => {
-  await authStore.logout();
-  router.push('/login');
+  const confirmed = await confirmLogout();
+  if (confirmed) {
+    await authStore.logout();
+    router.push('/login');
+  }
 };
 </script>

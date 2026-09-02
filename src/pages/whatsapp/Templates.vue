@@ -105,12 +105,27 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Template Name (Staff Label) *</label>
-              <input v-model="form.name" type="text" class="form-control" placeholder="e.g. Welcome message" required />
+              <input
+                v-model="form.name"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.name }]"
+                placeholder="e.g. Welcome message"
+                @input="clearError('name')"
+                required
+              />
+              <div v-if="validationErrors.name" class="invalid-feedback">{{ validationErrors.name[0] }}</div>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Official WhatsApp Name (API Identifier)</label>
-              <input v-model="form.whatsapp_template_name" type="text" class="form-control" placeholder="e.g. welcome_lead" />
+              <input
+                v-model="form.whatsapp_template_name"
+                type="text"
+                :class="['form-control', { 'is-invalid': validationErrors.whatsapp_template_name }]"
+                placeholder="e.g. welcome_lead"
+                @input="clearError('whatsapp_template_name')"
+              />
+              <div v-if="validationErrors.whatsapp_template_name" class="invalid-feedback">{{ validationErrors.whatsapp_template_name[0] }}</div>
             </div>
 
             <div class="mb-3">
@@ -126,11 +141,13 @@
               <label class="form-label">Message Content Body *</label>
               <textarea
                 v-model="form.content"
-                class="form-control"
+                :class="['form-control', { 'is-invalid': validationErrors.content }]"
                 rows="5"
                 placeholder="Hello {{name}}, Just following up on {{requirement}}. Regards, {{company}}."
+                @input="clearError('content')"
                 required
               ></textarea>
+              <div v-if="validationErrors.content" class="invalid-feedback">{{ validationErrors.content[0] }}</div>
             </div>
 
             <div class="mb-3 d-flex align-items-center gap-3">
@@ -151,8 +168,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" @click="showModal = false" class="btn btn-secondary">Cancel</button>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-floppy"></i> Save Template
+            <button type="submit" class="btn btn-primary" :disabled="saving">
+              <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              <i v-else class="bi bi-floppy"></i>
+              Save Template
             </button>
           </div>
         </form>
@@ -165,14 +184,18 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import whatsappApi from '@/api/whatsapp';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const loading = ref(true);
+const saving = ref(false);
 const templates = ref([]);
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);
+const validationErrors = ref({});
 
 const form = reactive({
   name: '',
@@ -181,6 +204,12 @@ const form = reactive({
   content: '',
   is_active: true
 });
+
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
 
 const parsedPreview = computed(() => {
   if (!form.content) return 'Type content to preview...';
@@ -213,6 +242,7 @@ const openCreateModal = () => {
   form.category = 'UTILITY';
   form.content = '';
   form.is_active = true;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
@@ -224,10 +254,13 @@ const openEditModal = (tpl) => {
   form.category = tpl.category;
   form.content = tpl.content;
   form.is_active = tpl.is_active;
+  validationErrors.value = {};
   showModal.value = true;
 };
 
 const submitForm = async () => {
+  saving.value = true;
+  validationErrors.value = {};
   try {
     if (isEdit.value) {
       await whatsappApi.updateTemplate(activeId.value, form);
@@ -239,18 +272,27 @@ const submitForm = async () => {
     showModal.value = false;
     loadTemplates();
   } catch (err) {
-    toast.error('Failed to save template. Please check settings.');
+    if (err.response?.data?.errors) {
+      validationErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to save template. Please check input values.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save template.');
+    }
+  } finally {
+    saving.value = false;
   }
 };
 
 const deleteConfirm = async (tpl) => {
-  if (confirm(`Delete template: ${tpl.name}?`)) {
+  const confirmed = await confirmDelete(`template "${tpl.name}"`);
+  if (confirmed) {
     try {
       await whatsappApi.deleteTemplate(tpl.id);
       toast.success('Template deleted.');
       loadTemplates();
     } catch (err) {
-      toast.error('Failed to delete template.');
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete template.');
     }
   }
 };

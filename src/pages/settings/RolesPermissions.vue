@@ -259,11 +259,13 @@
               <input
                 v-model="roleForm.name"
                 type="text"
-                class="form-control"
+                :class="['form-control', { 'is-invalid': roleErrors.name }]"
                 placeholder="e.g. Sales Team Lead, Marketing Specialist"
                 :disabled="isEditRole && isSystemRoleSelected"
+                @input="clearRoleError('name')"
                 required
               />
+              <div v-if="roleErrors.name" class="invalid-feedback">{{ roleErrors.name[0] }}</div>
               <small v-if="isEditRole && isSystemRoleSelected" class="text-muted">
                 System role names cannot be modified, but their assigned permissions can be customized.
               </small>
@@ -417,11 +419,13 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useToast } from '@/composables/useToast';
+import { useSwal } from '@/composables/useSwal';
 import rolesApi from '@/api/roles';
 import usersApi from '@/api/users';
 
 const authStore = useAuthStore();
 const toast = useToast();
+const { confirmDelete } = useSwal();
 
 const currentUser = computed(() => authStore.user);
 
@@ -438,6 +442,7 @@ const isEditRole = ref(false);
 const selectedRoleId = ref(null);
 const isSystemRoleSelected = ref(false);
 const savingRole = ref(false);
+const roleErrors = ref({});
 
 const roleForm = reactive({
   name: '',
@@ -451,6 +456,12 @@ const userAccessForm = reactive({
   role: 'Salesperson',
   permissions: []
 });
+
+const clearRoleError = (field) => {
+  if (roleErrors.value[field]) {
+    delete roleErrors.value[field];
+  }
+};
 
 const totalAvailablePermissions = computed(() => {
   return allPermissionsList.value.length || 13;
@@ -525,6 +536,7 @@ const openCreateRoleModal = () => {
   isSystemRoleSelected.value = false;
   roleForm.name = '';
   roleForm.permissions = [];
+  roleErrors.value = {};
   showRoleModal.value = true;
 };
 
@@ -534,6 +546,7 @@ const openEditRoleModal = (role) => {
   isSystemRoleSelected.value = role.is_system;
   roleForm.name = role.name;
   roleForm.permissions = [...(role.permissions || [])];
+  roleErrors.value = {};
   showRoleModal.value = true;
 };
 
@@ -573,6 +586,7 @@ const toggleGroupPermissions = (group) => {
 // Submit role
 const submitRoleForm = async () => {
   savingRole.value = true;
+  roleErrors.value = {};
   try {
     if (isEditRole.value) {
       await rolesApi.updateRole(selectedRoleId.value, roleForm);
@@ -584,7 +598,13 @@ const submitRoleForm = async () => {
     showRoleModal.value = false;
     await loadData();
   } catch (err) {
-    toast.error(err.response?.data?.message || err.message || 'Failed to save role.');
+    if (err.response?.data?.errors) {
+      roleErrors.value = err.response.data.errors;
+      const firstMsg = Object.values(err.response.data.errors).flat()[0];
+      toast.error(firstMsg || 'Failed to save role.');
+    } else {
+      toast.error(err.response?.data?.message || err.message || 'Failed to save role.');
+    }
   } finally {
     savingRole.value = false;
   }
@@ -592,7 +612,8 @@ const submitRoleForm = async () => {
 
 // Delete role
 const confirmDeleteRole = async (role) => {
-  if (confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
+  const confirmed = await confirmDelete(`role "${role.name}"`);
+  if (confirmed) {
     try {
       await rolesApi.deleteRole(role.id);
       toast.success('Role removed successfully.');
