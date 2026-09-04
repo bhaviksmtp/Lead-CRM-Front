@@ -57,8 +57,8 @@
             </td>
             <td>
               <span class="td-label">Type</span>
-              <span :class="['badge', `badge-${item.type === 'whatsapp' ? 'completed' : 'pending'}`]">
-                <i :class="item.type === 'whatsapp' ? 'bi bi-whatsapp' : 'bi bi-telephone-fill'"></i>
+              <span :class="['badge', getFollowUpTypeBadgeClass(item.type)]">
+                <i :class="getFollowUpTypeIcon(item.type)"></i>
                 {{ item.type }}
               </span>
             </td>
@@ -228,6 +228,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
 import { useWhatsApp } from '@/composables/useWhatsApp';
+import { useLeadSource } from '@/composables/useLeadSource';
 import { usePermissions } from '@/composables/usePermissions';
 import { useToast } from '@/composables/useToast';
 import { useSwal } from '@/composables/useSwal';
@@ -235,6 +236,7 @@ import { useSwal } from '@/composables/useSwal';
 const followUpsStore = useFollowUpsStore();
 const { formatDateTime, formatPhone } = useIndianFormat();
 const { openWhatsApp } = useWhatsApp();
+const { getFollowUpTypeIcon, getFollowUpTypeBadgeClass } = useLeadSource();
 const { hasRole } = usePermissions();
 const toast = useToast();
 const { confirmDelete } = useSwal();

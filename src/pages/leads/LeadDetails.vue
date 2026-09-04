@@ -30,7 +30,10 @@
             <button @click="triggerCall(lead.phone)" class="btn btn-secondary btn-sm" title="Call Lead">
               <i class="bi bi-telephone-fill"></i> Call
             </button>
-            <button @click="openWhatsAppChat" class="btn btn-whatsapp btn-sm" title="Open WhatsApp Chat">
+            <a v-if="lead.email" :href="`mailto:${lead.email}`" class="btn btn-secondary btn-sm" title="Send Email">
+              <i class="bi bi-envelope-fill"></i> Email
+            </a>
+            <button @click="openWhatsAppChat" class="btn btn-whatsapp btn-sm" title="Send WhatsApp Message">
               <i class="bi bi-whatsapp"></i> WhatsApp
             </button>
             <button
@@ -87,7 +90,10 @@
               </div>
               <div class="col-6">
                 <span class="info-label">Lead Source</span>
-                <span class="badge badge-low">{{ lead.source?.name || 'Unknown' }}</span>
+                <span :class="['badge', getSourceBadgeClass(lead.source?.name)]">
+                  <i :class="getSourceIcon(lead.source?.name)"></i>
+                  {{ lead.source?.name || 'Direct' }}
+                </span>
               </div>
               <div class="col-6">
                 <span class="info-label">Sales Stage</span>
@@ -318,6 +324,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useLeadsStore } from '@/stores/leads';
 import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
+import { useWhatsApp } from '@/composables/useWhatsApp';
+import { useLeadSource } from '@/composables/useLeadSource';
 import { useToast } from '@/composables/useToast';
 import { useSwal } from '@/composables/useSwal';
 
@@ -326,6 +334,8 @@ const router = useRouter();
 const leadsStore = useLeadsStore();
 const followUpsStore = useFollowUpsStore();
 const { formatCurrency, formatDate, formatDateTime } = useIndianFormat();
+const { openWhatsApp } = useWhatsApp();
+const { getSourceIcon, getSourceBadgeClass } = useLeadSource();
 const toast = useToast();
 const { confirmDelete } = useSwal();
 
@@ -369,11 +379,13 @@ onMounted(() => {
 });
 
 const triggerCall = (phone) => {
-  window.open(`tel:${phone}`);
+  if (phone) window.open(`tel:${phone}`);
 };
 
 const openWhatsAppChat = () => {
-  router.push('/whatsapp/inbox');
+  if (lead.value?.phone) {
+    openWhatsApp(lead.value.phone);
+  }
 };
 
 const markWon = async () => {

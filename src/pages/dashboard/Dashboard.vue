@@ -199,8 +199,8 @@
                 </td>
                 <td>
                   <span class="td-label">Type</span>
-                  <span :class="['badge', `badge-${item.type === 'whatsapp' ? 'completed' : 'pending'}`]">
-                    <i :class="item.type === 'whatsapp' ? 'bi bi-whatsapp' : 'bi bi-telephone-fill'"></i>
+                  <span :class="['badge', getFollowUpTypeBadgeClass(item.type)]">
+                    <i :class="getFollowUpTypeIcon(item.type)"></i>
                     {{ item.type }}
                   </span>
                 </td>
@@ -312,12 +312,14 @@ import { useDashboardStore } from '@/stores/dashboard';
 import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
 import { useWhatsApp } from '@/composables/useWhatsApp';
+import { useLeadSource } from '@/composables/useLeadSource';
 import { useToast } from '@/composables/useToast';
 
 const dashboardStore = useDashboardStore();
 const followUpsStore = useFollowUpsStore();
 const { formatCurrency, formatPhone } = useIndianFormat();
 const { openWhatsApp } = useWhatsApp();
+const { getFollowUpTypeIcon, getFollowUpTypeBadgeClass } = useLeadSource();
 const toast = useToast();
 
 const loading = computed(() => dashboardStore.loading);

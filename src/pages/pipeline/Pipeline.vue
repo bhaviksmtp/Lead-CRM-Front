@@ -87,8 +87,14 @@
                 <span class="text-truncate">{{ lead.company_name || 'Individual Client' }}</span>
               </div>
 
-              <div class="kanban-card-value">
-                {{ formatCurrency(lead.expected_value) }}
+              <div class="d-flex align-items-center justify-content-between gap-1 my-1">
+                <span :class="['badge', getSourceBadgeClass(lead.source?.name)]" style="font-size:0.65rem;font-weight:600;">
+                  <i :class="getSourceIcon(lead.source?.name)"></i>
+                  {{ lead.source?.name || 'Direct' }}
+                </span>
+                <span class="kanban-card-value">
+                  {{ formatCurrency(lead.expected_value) }}
+                </span>
               </div>
 
               <div class="kanban-card-footer">
@@ -149,9 +155,11 @@ import { ref, onMounted } from 'vue';
 import pipelineApi from '@/api/pipeline';
 import leadsApi from '@/api/leads';
 import { useIndianFormat } from '@/composables/useIndianFormat';
+import { useLeadSource } from '@/composables/useLeadSource';
 import { useToast } from '@/composables/useToast';
 
 const { formatCurrency } = useIndianFormat();
+const { getSourceIcon, getSourceBadgeClass } = useLeadSource();
 const toast = useToast();
 
 const loading = ref(true);

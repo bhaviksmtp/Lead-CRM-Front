@@ -78,7 +78,7 @@
         <thead>
           <tr>
             <th>Customer Name</th>
-            <th>WhatsApp / Contact</th>
+            <th>Contact Info</th>
             <th>Source</th>
             <th>Status</th>
             <th>Stage</th>
@@ -97,6 +97,7 @@
             <td>
               <span class="td-label">Contact</span>
               <div style="font-size:0.875rem;font-weight:500;">{{ formatPhone(lead.phone) }}</div>
+              <div v-if="lead.email" style="font-size:0.75rem;color:var(--text-secondary);">{{ lead.email }}</div>
               <span v-if="lead.priority" :class="['badge mt-1', `badge-${lead.priority}`]">
                 <i v-if="lead.priority === 'high'" class="bi bi-fire"></i>
                 {{ lead.priority }}
@@ -104,7 +105,10 @@
             </td>
             <td>
               <span class="td-label">Source</span>
-              <span class="badge badge-low">{{ lead.source?.name || 'Unknown' }}</span>
+              <span :class="['badge', getSourceBadgeClass(lead.source?.name)]">
+                <i :class="getSourceIcon(lead.source?.name)"></i>
+                {{ lead.source?.name || 'Direct' }}
+              </span>
             </td>
             <td>
               <span class="td-label">Status</span>
@@ -129,16 +133,22 @@
               <span class="td-label">Actions</span>
               <div class="d-flex flex-wrap gap-1">
                 <router-link :to="`/leads/${lead.id}`" class="btn btn-secondary btn-sm" title="View Details">
-                  <i class="bi bi-eye"></i> View
+                  <i class="bi bi-eye"></i>
                 </router-link>
                 <router-link :to="`/leads/${lead.id}/edit`" class="btn btn-secondary btn-sm" title="Edit Lead">
                   <i class="bi bi-pencil"></i>
                 </router-link>
-                <button @click="triggerWhatsApp(lead)" class="btn btn-whatsapp btn-sm" title="WhatsApp Chat">
+                <button @click="triggerCall(lead.phone)" class="btn btn-secondary btn-sm" title="Call Lead">
+                  <i class="bi bi-telephone-fill"></i>
+                </button>
+                <a v-if="lead.email" :href="`mailto:${lead.email}`" class="btn btn-secondary btn-sm" title="Send Email">
+                  <i class="bi bi-envelope-fill"></i>
+                </a>
+                <button @click="triggerWhatsApp(lead)" class="btn btn-whatsapp btn-sm" title="WhatsApp Message">
                   <i class="bi bi-whatsapp"></i>
                 </button>
                 <button @click="openFollowUpModal(lead)" class="btn btn-primary btn-sm" title="Schedule Follow-up">
-                  <i class="bi bi-calendar-plus"></i> Schedule
+                  <i class="bi bi-calendar-plus"></i>
                 </button>
                 <button @click="deleteConfirm(lead)" class="btn btn-danger btn-sm" title="Delete Lead">
                   <i class="bi bi-trash3"></i>
@@ -254,6 +264,7 @@ import { useLeadsStore } from '@/stores/leads';
 import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
 import { useWhatsApp } from '@/composables/useWhatsApp';
+import { useLeadSource } from '@/composables/useLeadSource';
 import { useToast } from '@/composables/useToast';
 import { useSwal } from '@/composables/useSwal';
 import settingsApi from '@/api/settings';
@@ -262,8 +273,13 @@ const leadsStore = useLeadsStore();
 const followUpsStore = useFollowUpsStore();
 const { formatCurrency, formatPhone } = useIndianFormat();
 const { openWhatsApp } = useWhatsApp();
+const { getSourceIcon, getSourceBadgeClass } = useLeadSource();
 const toast = useToast();
 const { confirmDelete } = useSwal();
+
+const triggerCall = (phone) => {
+  if (phone) window.open(`tel:${phone}`);
+};
 
 const loading = computed(() => leadsStore.loading);
 const leads = computed(() => leadsStore.leads);

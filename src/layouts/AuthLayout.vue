@@ -10,7 +10,7 @@
             style="height:44px;max-width:210px;object-fit:contain;"
           />
         </div>
-        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0;">WhatsApp CRM &amp; Sales Follow-up Automation</p>
+        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0;">Omnichannel Lead &amp; Sales Management CRM</p>
       </div>
 
       <router-view />

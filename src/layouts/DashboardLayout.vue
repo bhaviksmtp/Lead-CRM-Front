@@ -15,7 +15,7 @@
         <img src="@/assets/convera-icon-color.svg" alt="Convera" style="width:34px;height:34px;border-radius:9px;box-shadow:0 3px 10px rgba(67,56,202,0.4);" />
         <div class="brand-text">
           <span>Convera</span>
-          <span class="brand-sub">WhatsApp Sales Suite</span>
+          <span class="brand-sub">Lead Management CRM</span>
         </div>
       </div>
 
@@ -57,17 +57,6 @@
         >
           <span class="menu-icon"><i class="bi bi-kanban-fill"></i></span>
           <span>Pipeline</span>
-        </router-link>
-
-        <router-link
-          v-if="can('manage WhatsApp')"
-          to="/whatsapp/inbox"
-          class="menu-item"
-          active-class="active"
-          @click="sidebarOpen = false"
-        >
-          <span class="menu-icon"><i class="bi bi-whatsapp"></i></span>
-          <span>WhatsApp Chat</span>
         </router-link>
 
         <!-- Configuration Section (Only shown if user has any configuration permission) -->
