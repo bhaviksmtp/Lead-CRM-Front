@@ -5,18 +5,20 @@ import { useAuthStore } from '@/stores/auth';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 
-// Pages
+// Auth Pages
 import Login from '@/pages/auth/Login.vue';
+
+// Core Business Pages
 import Dashboard from '@/pages/dashboard/Dashboard.vue';
 import LeadList from '@/pages/leads/LeadList.vue';
 import LeadCreate from '@/pages/leads/LeadCreate.vue';
 import LeadEdit from '@/pages/leads/LeadEdit.vue';
 import LeadDetails from '@/pages/leads/LeadDetails.vue';
-import FollowUpList from '@/pages/followups/FollowUpList.vue';
 import Pipeline from '@/pages/pipeline/Pipeline.vue';
-import Inbox from '@/pages/whatsapp/Inbox.vue';
-import Templates from '@/pages/whatsapp/Templates.vue';
+import FollowUpList from '@/pages/followups/FollowUpList.vue';
+import ActivityList from '@/pages/activities/ActivityList.vue';
 
+// Settings Pages
 import Company from '@/pages/settings/Company.vue';
 import Users from '@/pages/settings/Users.vue';
 import RolesPermissions from '@/pages/settings/RolesPermissions.vue';
@@ -50,7 +52,7 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: Dashboard,
-        meta: { title: '📊 Dashboard Overview' }
+        meta: { title: '📊 Sales Dashboard' }
       },
       {
         path: 'leads',
@@ -62,13 +64,13 @@ const routes = [
         path: 'leads/create',
         name: 'LeadCreate',
         component: LeadCreate,
-        meta: { title: '➕ Create Lead', permission: 'create leads' }
+        meta: { title: '➕ Add New Lead', permission: 'create leads' }
       },
       {
         path: 'leads/:id',
         name: 'LeadDetails',
         component: LeadDetails,
-        meta: { title: '📄 Lead Details', permission: ['view leads', 'view all leads', 'view own leads'] }
+        meta: { title: '📄 Lead 360° Details', permission: ['view leads', 'view all leads', 'view own leads'] }
       },
       {
         path: 'leads/:id/edit',
@@ -77,28 +79,22 @@ const routes = [
         meta: { title: '✏️ Edit Lead', permission: 'edit leads' }
       },
       {
+        path: 'pipeline',
+        name: 'Pipeline',
+        component: Pipeline,
+        meta: { title: '🎯 Sales Pipeline Kanban', permission: 'manage pipeline' }
+      },
+      {
         path: 'follow-ups',
         name: 'FollowUps',
         component: FollowUpList,
         meta: { title: '📅 Follow-ups Schedule', permission: 'manage follow-ups' }
       },
       {
-        path: 'pipeline',
-        name: 'Pipeline',
-        component: Pipeline,
-        meta: { title: '🎯 Sales Kanban Pipeline', permission: 'manage pipeline' }
-      },
-      {
-        path: 'whatsapp/inbox',
-        name: 'WhatsappInbox',
-        component: Inbox,
-        meta: { title: '💬 WhatsApp Chat Inbox', permission: 'manage WhatsApp' }
-      },
-      {
-        path: 'whatsapp/templates',
-        name: 'WhatsappTemplates',
-        component: Templates,
-        meta: { title: '📝 WhatsApp Message Templates', permission: ['manage WhatsApp', 'manage settings'] }
+        path: 'activities',
+        name: 'Activities',
+        component: ActivityList,
+        meta: { title: '🕒 Activity Log' }
       },
       {
         path: 'settings/company',

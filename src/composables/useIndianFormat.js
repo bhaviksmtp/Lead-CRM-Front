@@ -28,6 +28,33 @@ export function useIndianFormat() {
     return `${day}/${month}/${year}`;
   };
 
+  const formatTime = (timeString) => {
+    if (!timeString) return '-';
+    // If it's full datetime or ISO string
+    const date = new Date(timeString);
+    if (!isNaN(date.getTime())) {
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+    }
+
+    // If it's HH:mm:ss format
+    if (typeof timeString === 'string' && timeString.includes(':')) {
+      const parts = timeString.split(':');
+      let hours = parseInt(parts[0], 10);
+      const minutes = parts[1] || '00';
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+    }
+
+    return timeString;
+  };
+
   const formatDateTime = (dateTimeString) => {
     if (!dateTimeString) return '-';
     const date = new Date(dateTimeString);
@@ -59,6 +86,7 @@ export function useIndianFormat() {
   return {
     formatCurrency,
     formatDate,
+    formatTime,
     formatDateTime,
     formatPhone
   };

@@ -7,11 +7,36 @@
           <i class="bi bi-person-plus-fill"></i>
           Register New Lead
         </h2>
-        <p class="page-header-sub">Fill in the customer details and requirement to create a new lead</p>
+        <p class="page-header-sub">Capture customer requirements, lead source, deal value, and schedule follow-ups</p>
       </div>
       <router-link to="/leads" class="btn btn-secondary">
         <i class="bi bi-arrow-left"></i> Back to Leads
       </router-link>
+    </div>
+
+    <!-- Duplicate Warning Banner -->
+    <div
+      v-if="duplicates.length"
+      class="p-3 mb-4 rounded border"
+      style="background:#fffbeb;border-color:#fde68a!important;"
+    >
+      <div class="d-flex align-items-start gap-2">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+        <div class="flex-grow-1">
+          <strong style="color:#92400e;">Possible Duplicate Lead Found:</strong>
+          <div v-for="dupe in duplicates" :key="dupe.id" class="d-flex align-items-center justify-content-between mt-1 flex-wrap gap-2">
+            <span style="font-size:0.875rem;color:#78350f;">
+              <strong>{{ dupe.name }}</strong> ({{ dupe.phone || dupe.email }}) &bull; Assigned to: {{ dupe.assigned_user?.name || 'Unassigned' }}
+            </span>
+            <router-link :to="`/leads/${dupe.id}`" class="btn btn-warning btn-sm" style="font-size:0.75rem;padding:2px 8px;">
+              Open Existing Lead
+            </router-link>
+          </div>
+          <p style="font-size:0.75rem;color:#b45309;margin:0.25rem 0 0;">
+            You can continue saving this new lead, or open the existing lead record above.
+          </p>
+        </div>
+      </div>
     </div>
 
     <form @submit.prevent="saveLead">
@@ -21,17 +46,17 @@
           <div class="card h-100">
             <div class="card-header">
               <i class="bi bi-person-vcard-fill"></i>
-              Customer Details
+              Customer Information
             </div>
             <div class="card-body">
               <div class="mb-3">
-                <label class="form-label" for="lead-name">Full Name *</label>
+                <label class="form-label" for="lead-name">Customer / Contact Name *</label>
                 <input
                   id="lead-name"
                   v-model="form.name"
                   type="text"
                   :class="['form-control', { 'is-invalid': validationErrors.name }]"
-                  placeholder="Client full name"
+                  placeholder="e.g. Rajesh Kumar"
                   @input="clearError('name')"
                   required
                 />
@@ -39,30 +64,17 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="lead-phone">Mobile Number * <small class="text-muted-custom">(Indian format)</small></label>
+                <label class="form-label" for="lead-phone">Mobile Number * <small class="text-muted">(Indian format)</small></label>
                 <input
                   id="lead-phone"
                   v-model="form.phone"
                   type="text"
                   :class="['form-control', { 'is-invalid': validationErrors.phone }]"
                   placeholder="e.g. 9876543210"
-                  @input="clearError('phone')"
+                  @input="handlePhoneInput"
                   required
                 />
                 <div v-if="validationErrors.phone" class="invalid-feedback">{{ validationErrors.phone[0] }}</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label" for="lead-whatsapp">WhatsApp Number <small class="text-muted-custom">(leave blank if same as mobile)</small></label>
-                <input
-                  id="lead-whatsapp"
-                  v-model="form.whatsapp_number"
-                  type="text"
-                  :class="['form-control', { 'is-invalid': validationErrors.whatsapp_number }]"
-                  placeholder="WhatsApp number"
-                  @input="clearError('whatsapp_number')"
-                />
-                <div v-if="validationErrors.whatsapp_number" class="invalid-feedback">{{ validationErrors.whatsapp_number[0] }}</div>
               </div>
 
               <div class="mb-3">
@@ -72,215 +84,123 @@
                   v-model="form.email"
                   type="email"
                   :class="['form-control', { 'is-invalid': validationErrors.email }]"
-                  placeholder="client@domain.com"
-                  @input="clearError('email')"
+                  placeholder="e.g. rajesh@company.com"
+                  @input="handleEmailInput"
                 />
                 <div v-if="validationErrors.email" class="invalid-feedback">{{ validationErrors.email[0] }}</div>
               </div>
 
-              <div class="mb-0">
-                <label class="form-label" for="lead-company">Company Name</label>
+              <div class="mb-3">
+                <label class="form-label" for="lead-company">Company / Business Name</label>
                 <input
                   id="lead-company"
                   v-model="form.company_name"
                   type="text"
                   :class="['form-control', { 'is-invalid': validationErrors.company_name }]"
-                  placeholder="Company or organization"
+                  placeholder="e.g. Apex Industrial Solutions"
                   @input="clearError('company_name')"
                 />
                 <div v-if="validationErrors.company_name" class="invalid-feedback">{{ validationErrors.company_name[0] }}</div>
               </div>
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label">City</label>
+                  <input v-model="form.city" type="text" class="form-control" placeholder="e.g. Mumbai" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">State</label>
+                  <input v-model="form.state" type="text" class="form-control" placeholder="e.g. Maharashtra" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- SECTION 2: Sales Details -->
+        <!-- SECTION 2: Sales & Pipeline Terms -->
         <div class="col-12 col-lg-6">
           <div class="card h-100">
             <div class="card-header">
-              <i class="bi bi-geo-alt-fill"></i>
-              Location &amp; Sales Details
+              <i class="bi bi-briefcase-fill"></i>
+              Sales &amp; Opportunity Terms
             </div>
             <div class="card-body">
-              <div class="row g-3 mb-3">
-                <div class="col-6">
-                  <label class="form-label" for="lead-city">City</label>
-                  <input
-                    id="lead-city"
-                    v-model="form.city"
-                    type="text"
-                    :class="['form-control', { 'is-invalid': validationErrors.city }]"
-                    placeholder="Mumbai"
-                    @input="clearError('city')"
-                  />
-                  <div v-if="validationErrors.city" class="invalid-feedback">{{ validationErrors.city[0] }}</div>
-                </div>
-                <div class="col-6">
-                  <label class="form-label" for="lead-state">State</label>
-                  <input
-                    id="lead-state"
-                    v-model="form.state"
-                    type="text"
-                    :class="['form-control', { 'is-invalid': validationErrors.state }]"
-                    placeholder="Maharashtra"
-                    @input="clearError('state')"
-                  />
-                  <div v-if="validationErrors.state" class="invalid-feedback">{{ validationErrors.state[0] }}</div>
-                </div>
-              </div>
-
               <div class="mb-3">
-                <label class="form-label" for="lead-source">Lead Source</label>
-                <select
-                  id="lead-source"
-                  v-model="form.source_id"
-                  :class="['form-select', { 'is-invalid': validationErrors.source_id }]"
-                  @change="clearError('source_id')"
-                >
-                  <option value="">— Select Source —</option>
-                  <option v-for="source in sources" :key="source.id" :value="source.id">{{ source.name }}</option>
-                </select>
-                <div v-if="validationErrors.source_id" class="invalid-feedback">{{ validationErrors.source_id[0] }}</div>
+                <label class="form-label">Expected Deal Value (₹)</label>
+                <input
+                  v-model.number="form.expected_value"
+                  type="number"
+                  class="form-control"
+                  placeholder="e.g. 150000"
+                />
               </div>
 
-              <div class="row g-3 mb-3">
+              <div class="row g-2 mb-3">
                 <div class="col-6">
-                  <label class="form-label" for="lead-status">Status</label>
-                  <select
-                    id="lead-status"
-                    v-model="form.status_id"
-                    :class="['form-select', { 'is-invalid': validationErrors.status_id }]"
-                    @change="clearError('status_id')"
-                  >
-                    <option value="">— Select Status —</option>
-                    <option v-for="status in statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
+                  <label class="form-label">Lead Priority *</label>
+                  <select v-model="form.priority" class="form-select">
+                    <option value="high">High (Hot 🔥)</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
                   </select>
-                  <div v-if="validationErrors.status_id" class="invalid-feedback">{{ validationErrors.status_id[0] }}</div>
                 </div>
                 <div class="col-6">
-                  <label class="form-label" for="lead-stage">Pipeline Stage</label>
-                  <select
-                    id="lead-stage"
-                    v-model="form.stage_id"
-                    :class="['form-select', { 'is-invalid': validationErrors.stage_id }]"
-                    @change="clearError('stage_id')"
-                  >
-                    <option value="">— Select Stage —</option>
+                  <label class="form-label">Lead Source</label>
+                  <select v-model="form.source_id" class="form-select">
+                    <option value="">Select source</option>
+                    <option v-for="source in sources" :key="source.id" :value="source.id">{{ source.name }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Pipeline Stage</label>
+                  <select v-model="form.stage_id" class="form-select">
                     <option v-for="stage in stages" :key="stage.id" :value="stage.id">{{ stage.name }}</option>
                   </select>
-                  <div v-if="validationErrors.stage_id" class="invalid-feedback">{{ validationErrors.stage_id[0] }}</div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Assign To Executive</label>
+                  <select v-model="form.assigned_to" class="form-select">
+                    <option value="">Unassigned</option>
+                    <option v-for="user in teamMembers" :key="user.id" :value="user.id">{{ user.name }}</option>
+                  </select>
                 </div>
               </div>
 
-              <div class="row g-3 mb-3">
+              <div class="row g-2 mb-3">
                 <div class="col-6">
-                  <label class="form-label" for="lead-priority">Priority</label>
-                  <select id="lead-priority" v-model="form.priority" class="form-select">
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
-                  </select>
+                  <label class="form-label">First Follow-up Date</label>
+                  <input v-model="form.next_follow_up_date" type="date" class="form-control" />
                 </div>
                 <div class="col-6">
-                  <label class="form-label" for="lead-value">Est. Value (₹)</label>
-                  <input
-                    id="lead-value"
-                    v-model="form.expected_value"
-                    type="number"
-                    :class="['form-control', { 'is-invalid': validationErrors.expected_value }]"
-                    placeholder="10000"
-                    min="0"
-                    @input="clearError('expected_value')"
-                  />
-                  <div v-if="validationErrors.expected_value" class="invalid-feedback">{{ validationErrors.expected_value[0] }}</div>
+                  <label class="form-label">Follow-up Time</label>
+                  <input v-model="form.next_follow_up_time" type="time" class="form-control" />
                 </div>
               </div>
 
               <div class="mb-0">
-                <label class="form-label" for="lead-assigned">Assigned Executive</label>
-                <select
-                  id="lead-assigned"
-                  v-model="form.assigned_to"
-                  :class="['form-select', { 'is-invalid': validationErrors.assigned_to }]"
-                  @change="clearError('assigned_to')"
-                >
-                  <option value="">— Unassigned —</option>
-                  <option v-for="user in teamMembers" :key="user.id" :value="user.id">{{ user.name }}</option>
-                </select>
-                <div v-if="validationErrors.assigned_to" class="invalid-feedback">{{ validationErrors.assigned_to[0] }}</div>
+                <label class="form-label">Client Requirement / Inquiry Notes</label>
+                <textarea
+                  v-model="form.requirement"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Specify product interest, budget details, delivery requirements..."
+                ></textarea>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- SECTION 3: Requirements -->
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header">
-              <i class="bi bi-card-text"></i>
-              Requirements Description
-            </div>
-            <div class="card-body">
-              <textarea
-                v-model="form.requirement"
-                :class="['form-control', { 'is-invalid': validationErrors.requirement }]"
-                rows="3"
-                placeholder="Describe client's requirements, product interest, or other relevant details..."
-                @input="clearError('requirement')"
-              ></textarea>
-              <div v-if="validationErrors.requirement" class="invalid-feedback">{{ validationErrors.requirement[0] }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 4: Initial Follow-up -->
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header">
-              <i class="bi bi-calendar-plus-fill"></i>
-              Initial Follow-up Task <span style="font-weight:400;color:var(--text-muted);">(Optional)</span>
-            </div>
-            <div class="card-body">
-              <div class="row g-3">
-                <div class="col-12 col-sm-6">
-                  <label class="form-label" for="followup-date">Follow-up Date</label>
-                  <input
-                    id="followup-date"
-                    v-model="form.next_follow_up_date"
-                    type="date"
-                    :class="['form-control', { 'is-invalid': validationErrors.next_follow_up_date }]"
-                    @change="clearError('next_follow_up_date')"
-                  />
-                  <div v-if="validationErrors.next_follow_up_date" class="invalid-feedback">{{ validationErrors.next_follow_up_date[0] }}</div>
-                </div>
-                <div class="col-12 col-sm-6">
-                  <label class="form-label" for="followup-time">Follow-up Time</label>
-                  <input
-                    id="followup-time"
-                    v-model="form.next_follow_up_time"
-                    type="time"
-                    :class="['form-control', { 'is-invalid': validationErrors.next_follow_up_time }]"
-                    @change="clearError('next_follow_up_time')"
-                  />
-                  <div v-if="validationErrors.next_follow_up_time" class="invalid-feedback">{{ validationErrors.next_follow_up_time[0] }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Form Actions -->
-        <div class="col-12">
-          <div class="d-flex justify-content-end gap-2 flex-wrap">
-            <router-link to="/leads" class="btn btn-secondary">Cancel</router-link>
-            <button type="submit" class="btn btn-primary px-4" :disabled="saving" id="save-lead-btn">
-              <span v-if="saving" class="spinner-border spinner-border-sm me-2" style="border-color:rgba(255,255,255,0.4);border-top-color:#fff;" role="status"></span>
-              <span v-if="saving">Saving Lead...</span>
-              <span v-else>
-                <i class="bi bi-check-lg"></i> Register Lead
-              </span>
-            </button>
-          </div>
+        <!-- Form Submission Button -->
+        <div class="col-12 text-end">
+          <router-link to="/leads" class="btn btn-secondary me-2">Cancel</router-link>
+          <button type="submit" class="btn btn-primary" :disabled="saving">
+            <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
+            <i v-else class="bi bi-person-plus-fill"></i>
+            Register Lead
+          </button>
         </div>
       </div>
     </form>
@@ -301,12 +221,7 @@ const toast = useToast();
 
 const saving = ref(false);
 const validationErrors = ref({});
-
-const clearError = (field) => {
-  if (validationErrors.value[field]) {
-    delete validationErrors.value[field];
-  }
-};
+const duplicates = ref([]);
 
 const sources = ref([]);
 const statuses = ref([]);
@@ -329,8 +244,41 @@ const form = reactive({
   assigned_to: '',
   requirement: '',
   next_follow_up_date: '',
-  next_follow_up_time: ''
+  next_follow_up_time: '11:00'
 });
+
+const clearError = (field) => {
+  if (validationErrors.value[field]) {
+    delete validationErrors.value[field];
+  }
+};
+
+let dupeTimeout = null;
+const checkDuplicateDebounced = () => {
+  clearTimeout(dupeTimeout);
+  dupeTimeout = setTimeout(async () => {
+    if (!form.phone && !form.email) {
+      duplicates.value = [];
+      return;
+    }
+    try {
+      const res = await leadsStore.checkDuplicate({ phone: form.phone, email: form.email });
+      duplicates.value = res.duplicates || [];
+    } catch (e) {
+      console.warn('Duplicate check failed', e);
+    }
+  }, 400);
+};
+
+const handlePhoneInput = () => {
+  clearError('phone');
+  checkDuplicateDebounced();
+};
+
+const handleEmailInput = () => {
+  clearError('email');
+  checkDuplicateDebounced();
+};
 
 const loadDropdowns = async () => {
   try {
@@ -338,7 +286,7 @@ const loadDropdowns = async () => {
       settingsApi.getStatuses(),
       settingsApi.getStages(),
       settingsApi.getSources(),
-      usersApi.getUsers()
+      usersApi.getUsers({ per_page: 100 })
     ]);
 
     if (resStatus.status === 'fulfilled') {
@@ -356,10 +304,10 @@ const loadDropdowns = async () => {
     }
 
     if (resUsers.status === 'fulfilled') {
-      teamMembers.value = (resUsers.value.data.users || []).filter(u => u.is_active);
+      teamMembers.value = (resUsers.value.data.users?.data || resUsers.value.data.users || []).filter(u => u.is_active);
     }
   } catch (err) {
-    toast.error('Failed to load form initialization data.');
+    toast.error('Failed to load dropdown choices.');
   }
 };
 
@@ -384,12 +332,9 @@ const saveLead = async () => {
     if (err.response?.data?.errors) {
       validationErrors.value = err.response.data.errors;
       const firstMsg = Object.values(err.response.data.errors).flat()[0];
-      toast.error(firstMsg || 'Validation failed. Please correct input fields.');
-    } else if (err.errors) {
-      validationErrors.value = err.errors;
-      toast.error('Validation failed. Please correct input fields.');
+      toast.error(firstMsg || 'Please correct errors in form.');
     } else {
-      toast.error(err.response?.data?.message || err.message || 'Failed to save lead.');
+      toast.error(err.response?.data?.message || 'Failed to save lead.');
     }
   } finally {
     saving.value = false;

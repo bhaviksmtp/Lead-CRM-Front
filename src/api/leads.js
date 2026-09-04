@@ -27,5 +27,29 @@ export default {
   },
   markLost(id, data) {
     return api.post(`/leads/${id}/lost`, data);
+  },
+  logActivity(id, data) {
+    return api.post(`/leads/${id}/activity`, data);
+  },
+  checkDuplicate(data) {
+    return api.post('/leads/check-duplicate', data);
+  },
+  bulkAssign(data) {
+    return api.post('/leads/bulk-assign', data);
+  },
+  bulkStatus(data) {
+    return api.post('/leads/bulk-status', data);
+  },
+  bulkDelete(data) {
+    return api.post('/leads/bulk-delete', data);
+  },
+  exportLeads() {
+    return api.get('/leads/export');
+  },
+  importLeads(data) {
+    return api.post('/leads/import', data);
+  },
+  getAllActivities(params = {}) {
+    return api.get('/activities', { params });
   }
 };

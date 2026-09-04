@@ -12,35 +12,50 @@
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
           <div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-              <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--text-primary);margin:0;">
+              <h2 style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:var(--text-primary);margin:0;">
                 {{ lead.name }}
               </h2>
               <span :class="['badge', `badge-${lead.priority}`]">
                 <i v-if="lead.priority === 'high'" class="bi bi-fire"></i>
                 {{ lead.priority }}
               </span>
+              <span v-if="lead.stage?.name === 'Won'" class="badge badge-won">
+                <i class="bi bi-trophy-fill"></i> Closed Won
+              </span>
+              <span v-else-if="lead.stage?.name === 'Lost'" class="badge badge-lost">
+                <i class="bi bi-x-circle-fill"></i> Closed Lost
+              </span>
             </div>
             <p style="color:var(--text-secondary);font-size:0.875rem;margin:0.25rem 0 0;">
               <i class="bi bi-building me-1"></i>
-              {{ lead.company_name || 'Individual Client' }}
+              {{ lead.company_name || 'Individual Client' }} &bull;
+              <i class="bi bi-geo-alt me-1"></i>
+              {{ lead.city ? `${lead.city}, ${lead.state || 'India'}` : 'Location unassigned' }}
             </p>
           </div>
 
+          <!-- Quick Action Bar -->
           <div class="d-flex flex-wrap gap-2">
             <button @click="triggerCall(lead.phone)" class="btn btn-secondary btn-sm" title="Call Lead">
-              <i class="bi bi-telephone-fill"></i> Call
+              <i class="bi bi-telephone-fill text-success"></i> Call
             </button>
             <a v-if="lead.email" :href="`mailto:${lead.email}`" class="btn btn-secondary btn-sm" title="Send Email">
-              <i class="bi bi-envelope-fill"></i> Email
+              <i class="bi bi-envelope-fill text-primary-custom"></i> Email
             </a>
-            <button @click="openWhatsAppChat" class="btn btn-whatsapp btn-sm" title="Send WhatsApp Message">
+            <button @click="handleWhatsAppAction" class="btn btn-whatsapp btn-sm" title="WhatsApp Message">
               <i class="bi bi-whatsapp"></i> WhatsApp
+            </button>
+            <button @click="openActivityModal" class="btn btn-secondary btn-sm" title="Log Activity">
+              <i class="bi bi-plus-circle text-info"></i> Log Activity
+            </button>
+            <button @click="showScheduleModal = true" class="btn btn-secondary btn-sm" title="Schedule Follow-up">
+              <i class="bi bi-calendar-plus text-warning"></i> Follow-up
             </button>
             <button
               v-if="lead.stage?.name !== 'Won' && lead.stage?.name !== 'Lost'"
               @click="markWon"
               class="btn btn-won btn-sm"
-              title="Mark Lead as Won"
+              title="Mark Won"
             >
               <i class="bi bi-trophy-fill"></i> Mark Won
             </button>
@@ -48,15 +63,15 @@
               v-if="lead.stage?.name !== 'Won' && lead.stage?.name !== 'Lost'"
               @click="openLostModal"
               class="btn btn-lost btn-sm"
-              title="Mark Lead as Lost"
+              title="Mark Lost"
             >
               <i class="bi bi-x-circle-fill"></i> Mark Lost
             </button>
-            <router-link :to="`/leads/${lead.id}/edit`" class="btn btn-secondary btn-sm" title="Edit Lead">
-              <i class="bi bi-pencil"></i> Edit
+            <router-link :to="`/leads/${lead.id}/edit`" class="btn btn-secondary btn-sm" title="Edit">
+              <i class="bi bi-pencil"></i>
             </router-link>
-            <button @click="confirmDeleteAction" class="btn btn-danger btn-sm" title="Delete Lead">
-              <i class="bi bi-trash3"></i> Delete
+            <button @click="confirmDeleteAction" class="btn btn-danger btn-sm" title="Delete">
+              <i class="bi bi-trash3"></i>
             </button>
           </div>
         </div>
@@ -65,55 +80,104 @@
 
     <!-- Main Layout -->
     <div class="row g-4">
-      <!-- LEFT COLUMN -->
+      <!-- LEFT COLUMN: Lead Information & Requirements -->
       <div class="col-12 col-lg-7">
-        <!-- Lead Information -->
+        <!-- Next Action Card (Highly visible) -->
+        <div class="card mb-4" style="border-left:5px solid var(--primary);background:#f8faff;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span style="font-size:0.8125rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.5px;">
+                <i class="bi bi-bell-fill me-1"></i> Next Follow-up Action
+              </span>
+              <span v-if="lead.next_follow_up_date" class="badge badge-low">
+                Assigned: {{ lead.assigned_user?.name || 'Unassigned' }}
+              </span>
+            </div>
+
+            <div v-if="lead.next_follow_up_date">
+              <div class="fw-800 text-dark" style="font-size:1.15rem;">
+                <i class="bi bi-calendar-event text-primary-custom me-1"></i>
+                Due: {{ formatDate(lead.next_follow_up_date) }}
+                <span style="font-weight:500;color:var(--text-secondary);font-size:0.95rem;"> at </span>
+                {{ formatTime(lead.next_follow_up_time) || '10:00 AM' }}
+              </div>
+              <div class="d-flex gap-2 mt-3">
+                <button @click="triggerCall(lead.phone)" class="btn btn-secondary btn-sm">
+                  <i class="bi bi-telephone-fill"></i> Call Now
+                </button>
+                <button @click="handleWhatsAppAction" class="btn btn-whatsapp btn-sm">
+                  <i class="bi bi-whatsapp"></i> WhatsApp
+                </button>
+                <button @click="showScheduleModal = true" class="btn btn-secondary btn-sm">
+                  <i class="bi bi-clock-history"></i> Reschedule
+                </button>
+              </div>
+            </div>
+
+            <div v-else>
+              <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.75rem;">
+                No upcoming follow-up scheduled.
+              </p>
+              <button @click="showScheduleModal = true" class="btn btn-primary btn-sm">
+                <i class="bi bi-calendar-plus"></i> Schedule Follow-up
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lead Key Profile -->
         <div class="card mb-4">
           <div class="card-header">
             <i class="bi bi-person-lines-fill"></i>
-            Lead Information
+            Lead Details &amp; Deal Terms
           </div>
           <div class="card-body">
             <div class="row g-3">
-              <div class="col-6">
-                <span class="info-label">Estimated Value</span>
+              <div class="col-6 col-md-4">
+                <span class="info-label">Expected Deal Value</span>
                 <span style="font-size:1.25rem;font-weight:800;color:var(--primary);">
                   {{ formatCurrency(lead.expected_value) }}
                 </span>
               </div>
-              <div class="col-6">
-                <span class="info-label">Executive Owner</span>
-                <span class="fw-600 text-dark d-inline-flex align-items-center gap-1">
-                  <i class="bi bi-person-check text-primary-custom"></i>
-                  {{ lead.assigned_user?.name || 'Unassigned' }}
-                </span>
+              <div class="col-6 col-md-4">
+                <span class="info-label">Sales Stage</span>
+                <span class="badge badge-new">{{ lead.stage?.name || 'New' }}</span>
               </div>
-              <div class="col-6">
-                <span class="info-label">Lead Source</span>
+              <div class="col-6 col-md-4">
+                <span class="info-label">Lead Status</span>
+                <span class="info-value fw-600">{{ lead.status?.name || 'New' }}</span>
+              </div>
+              <div class="col-6 col-md-4">
+                <span class="info-label">Marketing Source</span>
                 <span :class="['badge', getSourceBadgeClass(lead.source?.name)]">
                   <i :class="getSourceIcon(lead.source?.name)"></i>
                   {{ lead.source?.name || 'Direct' }}
                 </span>
               </div>
-              <div class="col-6">
-                <span class="info-label">Sales Stage</span>
-                <span class="badge badge-new">{{ lead.stage?.name || 'New Lead' }}</span>
+              <div class="col-6 col-md-4">
+                <span class="info-label">Assigned Executive</span>
+                <span class="fw-600 text-dark d-inline-flex align-items-center gap-1">
+                  <i class="bi bi-person text-primary-custom"></i>
+                  {{ lead.assigned_user?.name || 'Unassigned' }}
+                </span>
               </div>
-              <div class="col-6">
+              <div class="col-6 col-md-4">
+                <span class="info-label">Phone Number</span>
+                <span class="info-value fw-600">{{ formatPhone(lead.phone) }}</span>
+              </div>
+              <div class="col-6 col-md-4">
                 <span class="info-label">Email Address</span>
                 <span class="info-value">{{ lead.email || '—' }}</span>
               </div>
-              <div class="col-6">
-                <span class="info-label">Lead Status</span>
-                <span class="info-value fw-600">{{ lead.status?.name || 'New' }}</span>
+              <div class="col-6 col-md-4">
+                <span class="info-label">Last Contacted</span>
+                <span class="info-value">{{ lead.last_contacted_at ? formatDateTime(lead.last_contacted_at) : 'Not contacted yet' }}</span>
               </div>
-              <div class="col-6">
-                <span class="info-label">City</span>
-                <span class="info-value">{{ lead.city || '—' }}</span>
-              </div>
-              <div class="col-6">
-                <span class="info-label">State</span>
-                <span class="info-value">{{ lead.state || '—' }}</span>
+              <div v-if="lead.lost_reason" class="col-12">
+                <span class="info-label text-danger">Lost Reason</span>
+                <div class="p-2 rounded bg-danger-subtle text-danger fw-600" style="font-size:0.875rem;">
+                  {{ lead.lost_reason }}
+                </div>
               </div>
             </div>
           </div>
@@ -123,11 +187,11 @@
         <div class="card mb-4">
           <div class="card-header">
             <i class="bi bi-card-text"></i>
-            Requirements
+            Client Requirements
           </div>
           <div class="card-body">
-            <p style="font-size:0.875rem;color:var(--text-primary);white-space:pre-line;margin:0;line-height:1.7;">
-              {{ lead.requirement || 'No requirements specified.' }}
+            <p style="font-size:0.9375rem;color:var(--text-primary);white-space:pre-line;margin:0;line-height:1.7;">
+              {{ lead.requirement || 'No detailed requirements specified.' }}
             </p>
           </div>
         </div>
@@ -136,14 +200,14 @@
         <div class="card">
           <div class="card-header">
             <i class="bi bi-pencil-square"></i>
-            Add Custom Note
+            Add Quick Note
           </div>
           <div class="card-body">
             <textarea
               v-model="newNote"
               class="form-control mb-3"
               rows="3"
-              placeholder="Enter private staff remarks or observations..."
+              placeholder="Enter internal staff remarks or observations..."
             ></textarea>
             <button
               @click="submitNote"
@@ -156,43 +220,17 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN -->
+      <!-- RIGHT COLUMN: Activity Log Timeline -->
       <div class="col-12 col-lg-5">
-        <!-- Next Follow-up -->
-        <div class="card mb-4" style="border-left:4px solid var(--warning);">
-          <div class="card-header">
-            <i class="bi bi-alarm-fill text-warning"></i>
-            Next Follow-up Task
-          </div>
-          <div class="card-body">
-            <div v-if="lead.next_follow_up_date" style="font-size:0.875rem;">
-              <div class="fw-600" style="font-size:1rem;color:var(--text-primary);">
-                <i class="bi bi-calendar-event me-1 text-primary-custom"></i>
-                {{ formatDate(lead.next_follow_up_date) }}
-                <span style="color:var(--text-secondary);font-weight:400;"> at </span>
-                <i class="bi bi-clock me-1 text-muted"></i>
-                {{ lead.next_follow_up_time || 'N/A' }}
-              </div>
-              <p style="color:var(--text-secondary);margin-top:0.375rem;font-size:0.8125rem;">
-                Task will appear automatically in the follow-ups schedule.
-              </p>
+        <div class="card" style="max-height:680px;overflow-y:auto;">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+              <i class="bi bi-clock-history"></i>
+              Activity Timeline ({{ timeline.length }})
             </div>
-            <div v-else>
-              <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.75rem;">
-                No upcoming follow-up scheduled.
-              </p>
-              <button @click="showScheduleModal = true" class="btn btn-secondary btn-sm">
-                <i class="bi bi-calendar-plus"></i> Schedule Action
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Activity Timeline -->
-        <div class="card" style="max-height:520px;overflow-y:auto;">
-          <div class="card-header">
-            <i class="bi bi-clock-history"></i>
-            Activity Log
+            <button @click="openActivityModal" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 8px;">
+              + Log Activity
+            </button>
           </div>
           <div class="card-body">
             <div v-if="timeline.length" class="timeline">
@@ -203,9 +241,9 @@
                     <i class="bi bi-clock"></i>
                     {{ formatDateTime(act.created_at) }}
                   </div>
-                  <div class="timeline-title">{{ act.type }}</div>
-                  <p class="timeline-desc">{{ act.description }}</p>
-                  <div v-if="act.user" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">
+                  <div class="timeline-title fw-700">{{ act.type }}</div>
+                  <p class="timeline-desc mb-1">{{ act.description }}</p>
+                  <div v-if="act.user" style="font-size:0.7rem;color:var(--text-muted);">
                     <i class="bi bi-person me-1"></i> Logged by: {{ act.user.name }}
                   </div>
                 </div>
@@ -216,6 +254,78 @@
               No activities logged yet.
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Activity Modal -->
+    <div v-if="showActivityModal" class="modal-overlay" @click.self="showActivityModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle text-primary-custom"></i> Log Activity</h5>
+          <button @click="showActivityModal = false" class="modal-close"><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Activity Type *</label>
+            <select v-model="activityForm.type" class="form-select">
+              <option value="Phone Call">Phone Call</option>
+              <option value="WhatsApp Message">WhatsApp Message</option>
+              <option value="Email Sent">Email Sent</option>
+              <option value="Meeting / Demo">In-Person Meeting / Demo</option>
+              <option value="Note Added">General Note</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description *</label>
+            <textarea
+              v-model="activityForm.description"
+              class="form-control"
+              rows="3"
+              placeholder="Summary of interaction..."
+              required
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="showActivityModal = false" class="btn btn-secondary">Cancel</button>
+          <button @click="submitActivity" class="btn btn-primary" :disabled="!activityForm.description.trim()">
+            Save Activity Log
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log WhatsApp Activity Modal -->
+    <div v-if="showWhatsAppModal" class="modal-overlay" @click.self="showWhatsAppModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-whatsapp text-whatsapp"></i>
+            Log WhatsApp Message Activity &bull; {{ lead?.name }}
+          </h5>
+          <button @click="showWhatsAppModal = false" class="modal-close"><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:1rem;">
+            <i class="bi bi-info-circle me-1"></i>
+            WhatsApp web/app was opened. Record your notes below to save the interaction in the lead timeline.
+          </p>
+          <div class="mb-3">
+            <label class="form-label">Activity Notes *</label>
+            <textarea
+              v-model="whatsAppNote"
+              class="form-control"
+              rows="3"
+              placeholder="e.g. Sent catalogue and delivery details via WhatsApp."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="showWhatsAppModal = false" class="btn btn-secondary">Close</button>
+          <button @click="saveWhatsAppActivity" class="btn btn-whatsapp" :disabled="!whatsAppNote.trim()">
+            <i class="bi bi-floppy"></i> Save Activity Log
+          </button>
         </div>
       </div>
     </div>
@@ -233,22 +343,30 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Lost Reason *</label>
+            <select v-model="lostReasonCategory" class="form-select mb-2" required>
+              <option value="Too Expensive">Too Expensive / High Price</option>
+              <option value="Competitor">Chose Competitor</option>
+              <option value="No Response">Customer Stopped Responding</option>
+              <option value="Timing">Project Postponed / Bad Timing</option>
+              <option value="Product Not Suitable">Product Not Suitable</option>
+              <option value="Budget Issue">Budget Issue</option>
+              <option value="Other">Other Reason</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Additional Remarks</label>
             <textarea
-              v-model="lostReason"
-              :class="['form-control', { 'is-invalid': lostReasonError }]"
-              rows="3"
-              placeholder="e.g. Higher pricing than competitors / Customer cancelled project"
-              @input="lostReasonError = ''"
-              required
+              v-model="lostReasonNotes"
+              class="form-control"
+              rows="2"
+              placeholder="Further details..."
             ></textarea>
-            <div v-if="lostReasonError" class="invalid-feedback">{{ lostReasonError }}</div>
           </div>
         </div>
         <div class="modal-footer">
           <button @click="showLostModal = false" class="btn btn-secondary">Cancel</button>
           <button @click="submitLost" class="btn btn-danger" :disabled="submittingLost">
-            <span v-if="submittingLost" class="spinner-border spinner-border-sm me-2" role="status"></span>
-            <i v-else class="bi bi-x-circle"></i>
+            <span v-if="submittingLost" class="spinner-border spinner-border-sm me-1"></span>
             Confirm Lost
           </button>
         </div>
@@ -268,48 +386,27 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Follow-up Type</label>
-            <select
-              v-model="followUpForm.type"
-              :class="['form-select', { 'is-invalid': followUpErrors.type }]"
-              @change="clearFollowUpError('type')"
-              required
-            >
-              <option value="whatsapp">WhatsApp Message</option>
+            <select v-model="followUpForm.type" class="form-select" required>
               <option value="call">Phone Call</option>
+              <option value="whatsapp">WhatsApp Message</option>
               <option value="email">Email Message</option>
               <option value="meeting">In-Person Meeting</option>
               <option value="other">Other</option>
             </select>
-            <div v-if="followUpErrors.type" class="invalid-feedback">{{ followUpErrors.type[0] }}</div>
           </div>
           <div class="mb-3">
             <label class="form-label">Date &amp; Time *</label>
-            <input
-              v-model="followUpForm.scheduled_at"
-              type="datetime-local"
-              :class="['form-control', { 'is-invalid': followUpErrors.scheduled_at }]"
-              @input="clearFollowUpError('scheduled_at')"
-              required
-            />
-            <div v-if="followUpErrors.scheduled_at" class="invalid-feedback">{{ followUpErrors.scheduled_at[0] }}</div>
+            <input v-model="followUpForm.scheduled_at" type="datetime-local" class="form-control" required />
           </div>
           <div class="mb-3">
             <label class="form-label">Notes / Remarks</label>
-            <textarea
-              v-model="followUpForm.notes"
-              :class="['form-control', { 'is-invalid': followUpErrors.notes }]"
-              rows="3"
-              placeholder="Specific notes on this task..."
-              @input="clearFollowUpError('notes')"
-            ></textarea>
-            <div v-if="followUpErrors.notes" class="invalid-feedback">{{ followUpErrors.notes[0] }}</div>
+            <textarea v-model="followUpForm.notes" class="form-control" rows="3" placeholder="Specific agenda for this task..."></textarea>
           </div>
         </div>
         <div class="modal-footer">
           <button @click="showScheduleModal = false" class="btn btn-secondary">Cancel</button>
           <button @click="submitFollowUp" class="btn btn-primary" :disabled="submittingFollowUp">
-            <span v-if="submittingFollowUp" class="spinner-border spinner-border-sm me-2" role="status"></span>
-            <i v-else class="bi bi-calendar-check"></i>
+            <span v-if="submittingFollowUp" class="spinner-border spinner-border-sm me-1"></span>
             Schedule Task
           </button>
         </div>
@@ -333,7 +430,7 @@ const route = useRoute();
 const router = useRouter();
 const leadsStore = useLeadsStore();
 const followUpsStore = useFollowUpsStore();
-const { formatCurrency, formatDate, formatDateTime } = useIndianFormat();
+const { formatCurrency, formatDate, formatTime, formatDateTime, formatPhone } = useIndianFormat();
 const { openWhatsApp } = useWhatsApp();
 const { getSourceIcon, getSourceBadgeClass } = useLeadSource();
 const toast = useToast();
@@ -345,24 +442,23 @@ const timeline = computed(() => leadsStore.timeline);
 
 const newNote = ref('');
 const showLostModal = ref(false);
-const lostReason = ref('');
-const lostReasonError = ref('');
+const lostReasonCategory = ref('Too Expensive');
+const lostReasonNotes = ref('');
 const submittingLost = ref(false);
+
+const showActivityModal = ref(false);
+const activityForm = reactive({ type: 'Phone Call', description: '' });
+
+const showWhatsAppModal = ref(false);
+const whatsAppNote = ref('');
 
 const showScheduleModal = ref(false);
 const submittingFollowUp = ref(false);
-const followUpErrors = ref({});
 const followUpForm = reactive({
   type: 'call',
   scheduled_at: '',
   notes: ''
 });
-
-const clearFollowUpError = (field) => {
-  if (followUpErrors.value[field]) {
-    delete followUpErrors.value[field];
-  }
-};
 
 const loadLeadDetails = async () => {
   try {
@@ -382,9 +478,46 @@ const triggerCall = (phone) => {
   if (phone) window.open(`tel:${phone}`);
 };
 
-const openWhatsAppChat = () => {
+const handleWhatsAppAction = () => {
   if (lead.value?.phone) {
-    openWhatsApp(lead.value.phone);
+    openWhatsApp(lead.value.phone, `Hi ${lead.value.name}, connecting from Convera.`);
+  }
+  whatsAppNote.value = '';
+  showWhatsAppModal.value = true;
+};
+
+const saveWhatsAppActivity = async () => {
+  if (!whatsAppNote.value.trim()) return;
+  try {
+    await leadsStore.logActivity(lead.value.id, {
+      type: 'WhatsApp Message',
+      description: whatsAppNote.value.trim(),
+    });
+    toast.success('WhatsApp activity logged in timeline.');
+    showWhatsAppModal.value = false;
+    whatsAppNote.value = '';
+  } catch (err) {
+    toast.error('Failed to log WhatsApp activity.');
+  }
+};
+
+const openActivityModal = () => {
+  activityForm.type = 'Phone Call';
+  activityForm.description = '';
+  showActivityModal.value = true;
+};
+
+const submitActivity = async () => {
+  if (!activityForm.description.trim()) return;
+  try {
+    await leadsStore.logActivity(lead.value.id, {
+      type: activityForm.type,
+      description: activityForm.description.trim(),
+    });
+    toast.success('Activity logged.');
+    showActivityModal.value = false;
+  } catch (err) {
+    toast.error('Failed to log activity.');
   }
 };
 
@@ -394,30 +527,29 @@ const markWon = async () => {
     toast.success('Lead marked as closed WON!');
     loadLeadDetails();
   } catch (err) {
-    toast.error(err.response?.data?.message || 'Failed to update stage to Won.');
+    toast.error('Failed to update stage to Won.');
   }
 };
 
 const openLostModal = () => {
-  lostReason.value = '';
-  lostReasonError.value = '';
+  lostReasonCategory.value = 'Too Expensive';
+  lostReasonNotes.value = '';
   showLostModal.value = true;
 };
 
 const submitLost = async () => {
-  if (!lostReason.value.trim()) {
-    lostReasonError.value = 'Please provide a reason for losing this lead.';
-    toast.error('Lost reason is required.');
-    return;
-  }
+  const fullReason = lostReasonNotes.value.trim()
+    ? `${lostReasonCategory.value} — ${lostReasonNotes.value.trim()}`
+    : lostReasonCategory.value;
+
   submittingLost.value = true;
   try {
-    await leadsStore.markLost(lead.value.id, lostReason.value.trim());
+    await leadsStore.markLost(lead.value.id, fullReason);
     toast.success('Lead marked as lost.');
     showLostModal.value = false;
     loadLeadDetails();
   } catch (err) {
-    toast.error(err.response?.data?.message || err.message || 'Failed to update stage to Lost.');
+    toast.error('Failed to mark lead as lost.');
   } finally {
     submittingLost.value = false;
   }
@@ -427,17 +559,15 @@ const submitNote = async () => {
   if (!newNote.value.trim()) return;
   try {
     await leadsStore.addNote(lead.value.id, newNote.value.trim());
-    toast.success('Note added successfully.');
+    toast.success('Note added.');
     newNote.value = '';
   } catch (err) {
-    toast.error(err.response?.data?.message || err.message || 'Failed to save note.');
+    toast.error('Failed to save note.');
   }
 };
 
 const submitFollowUp = async () => {
-  followUpErrors.value = {};
   if (!followUpForm.scheduled_at) {
-    followUpErrors.value.scheduled_at = ['Please select a date and time for follow-up.'];
     toast.error('Please select date and time.');
     return;
   }
@@ -448,17 +578,11 @@ const submitFollowUp = async () => {
       assigned_to: lead.value.assigned_to || undefined,
       ...followUpForm
     });
-    toast.success('Follow-up task scheduled.');
+    toast.success('Follow-up scheduled.');
     showScheduleModal.value = false;
     loadLeadDetails();
   } catch (err) {
-    if (err.response?.data?.errors) {
-      followUpErrors.value = err.response.data.errors;
-      const firstMsg = Object.values(err.response.data.errors).flat()[0];
-      toast.error(firstMsg || 'Failed to create follow-up task.');
-    } else {
-      toast.error(err.response?.data?.message || err.message || 'Failed to create follow-up task.');
-    }
+    toast.error('Failed to create follow-up task.');
   } finally {
     submittingFollowUp.value = false;
   }
@@ -472,7 +596,7 @@ const confirmDeleteAction = async () => {
       toast.success('Lead deleted.');
       router.push('/leads');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to delete lead.');
+      toast.error('Failed to delete lead.');
     }
   }
 };

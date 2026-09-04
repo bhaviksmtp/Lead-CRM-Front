@@ -15,7 +15,7 @@
         <img src="@/assets/convera-icon-color.svg" alt="Convera" style="width:34px;height:34px;border-radius:9px;box-shadow:0 3px 10px rgba(67,56,202,0.4);" />
         <div class="brand-text">
           <span>Convera</span>
-          <span class="brand-sub">Lead Management CRM</span>
+          <span class="brand-sub">Lead &amp; Sales CRM</span>
         </div>
       </div>
 
@@ -38,17 +38,6 @@
         </router-link>
 
         <router-link
-          v-if="can('manage follow-ups')"
-          to="/follow-ups"
-          class="menu-item"
-          active-class="active"
-          @click="sidebarOpen = false"
-        >
-          <span class="menu-icon"><i class="bi bi-calendar-event-fill"></i></span>
-          <span>Follow-ups</span>
-        </router-link>
-
-        <router-link
           v-if="can('manage pipeline')"
           to="/pipeline"
           class="menu-item"
@@ -59,20 +48,36 @@
           <span>Pipeline</span>
         </router-link>
 
-        <!-- Configuration Section (Only shown if user has any configuration permission) -->
-        <template v-if="canAny(['manage WhatsApp', 'manage settings', 'manage users'])">
+        <router-link
+          v-if="can('manage follow-ups')"
+          to="/follow-ups"
+          class="menu-item"
+          active-class="active"
+          @click="sidebarOpen = false"
+        >
+          <span class="menu-icon"><i class="bi bi-calendar-event-fill"></i></span>
+          <span>Follow-ups</span>
+        </router-link>
+
+        <router-link to="/activities" class="menu-item" active-class="active" @click="sidebarOpen = false">
+          <span class="menu-icon"><i class="bi bi-clock-history"></i></span>
+          <span>Activity Log</span>
+        </router-link>
+
+        <!-- Configuration Section -->
+        <template v-if="canAny(['manage settings', 'manage users'])">
           <div class="menu-divider"></div>
           <div class="menu-header">Configuration</div>
 
           <router-link
-            v-if="canAny(['manage WhatsApp', 'manage settings'])"
-            to="/whatsapp/templates"
+            v-if="can('manage settings')"
+            to="/settings/company"
             class="menu-item"
             active-class="active"
             @click="sidebarOpen = false"
           >
-            <span class="menu-icon"><i class="bi bi-file-earmark-text-fill"></i></span>
-            <span>Templates</span>
+            <span class="menu-icon"><i class="bi bi-buildings-fill"></i></span>
+            <span>Company</span>
           </router-link>
 
           <router-link
@@ -83,7 +88,7 @@
             @click="sidebarOpen = false"
           >
             <span class="menu-icon"><i class="bi bi-person-badge-fill"></i></span>
-            <span>Team Members</span>
+            <span>Team Users</span>
           </router-link>
 
           <router-link
@@ -94,18 +99,7 @@
             @click="sidebarOpen = false"
           >
             <span class="menu-icon"><i class="bi bi-shield-lock-fill"></i></span>
-            <span>Roles & Permissions</span>
-          </router-link>
-
-          <router-link
-            v-if="can('manage settings')"
-            to="/settings/company"
-            class="menu-item"
-            active-class="active"
-            @click="sidebarOpen = false"
-          >
-            <span class="menu-icon"><i class="bi bi-buildings-fill"></i></span>
-            <span>Company Settings</span>
+            <span>Roles &amp; Permissions</span>
           </router-link>
 
           <router-link
@@ -121,17 +115,6 @@
 
           <router-link
             v-if="can('manage settings')"
-            to="/settings/statuses"
-            class="menu-item"
-            active-class="active"
-            @click="sidebarOpen = false"
-          >
-            <span class="menu-icon"><i class="bi bi-tags-fill"></i></span>
-            <span>Lead Statuses</span>
-          </router-link>
-
-          <router-link
-            v-if="can('manage settings')"
             to="/settings/stages"
             class="menu-item"
             active-class="active"
@@ -139,6 +122,17 @@
           >
             <span class="menu-icon"><i class="bi bi-flag-fill"></i></span>
             <span>Pipeline Stages</span>
+          </router-link>
+
+          <router-link
+            v-if="can('manage settings')"
+            to="/settings/statuses"
+            class="menu-item"
+            active-class="active"
+            @click="sidebarOpen = false"
+          >
+            <span class="menu-icon"><i class="bi bi-tags-fill"></i></span>
+            <span>Lead Statuses</span>
           </router-link>
         </template>
       </nav>
@@ -170,8 +164,12 @@
             <h1>{{ pageTitle }}</h1>
           </div>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <span class="company-badge d-none d-sm-inline-flex">
+        <div class="d-flex align-items-center gap-3">
+          <router-link to="/leads/create" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-plus-lg"></i>
+            <span>Add Lead</span>
+          </router-link>
+          <span class="company-badge d-none d-md-inline-flex">
             <i class="bi bi-building"></i>
             {{ currentUser?.company?.name || 'Convera' }}
           </span>

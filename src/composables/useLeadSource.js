@@ -36,6 +36,15 @@ export function useLeadSource() {
     if (name.includes('manual') || name.includes('direct') || name.includes('entry') || name.includes('staff')) {
       return 'bi bi-pencil-square';
     }
+    if (name.includes('indiamart') || name.includes('india mart')) {
+      return 'bi bi-shop';
+    }
+    if (name.includes('justdial') || name.includes('jd')) {
+      return 'bi bi-telephone-inbound-fill';
+    }
+    if (name.includes('tradeindia') || name.includes('trade india')) {
+      return 'bi bi-building-check';
+    }
     if (name.includes('whatsapp')) {
       return 'bi bi-whatsapp';
     }
@@ -66,6 +75,9 @@ export function useLeadSource() {
       return 'badge-source-social';
     }
     if (name.includes('google') || name.includes('ad') || name.includes('campaign')) {
+      return 'badge-source-ads';
+    }
+    if (name.includes('indiamart') || name.includes('india mart') || name.includes('tradeindia') || name.includes('justdial')) {
       return 'badge-source-ads';
     }
     if (name.includes('referral') || name.includes('partner')) {
