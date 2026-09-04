@@ -25,10 +25,35 @@
       </button>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="d-flex flex-column align-items-center py-5 gap-3">
-      <div class="spinner-custom"></div>
-      <p style="color:var(--text-secondary);font-size:0.875rem;">Loading schedule...</p>
+    <!-- Skeleton Loading -->
+    <div v-if="loading" class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Customer / Lead</th>
+            <th>Type</th>
+            <th>Scheduled</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th>Executive</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="i in 5" :key="i">
+            <td>
+              <div class="skeleton mb-1" style="height: 14px; width: 120px;"></div>
+              <div class="skeleton" style="height: 10px; width: 70px;"></div>
+            </td>
+            <td><div class="skeleton" style="height: 20px; width: 60px; border-radius: 10px;"></div></td>
+            <td><div class="skeleton" style="height: 14px; width: 100px;"></div></td>
+            <td><div class="skeleton" style="height: 20px; width: 70px; border-radius: 10px;"></div></td>
+            <td><div class="skeleton" style="height: 14px; width: 150px;"></div></td>
+            <td><div class="skeleton" style="height: 14px; width: 80px;"></div></td>
+            <td><div class="skeleton" style="height: 28px; width: 70px; border-radius: 6px;"></div></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Follow-ups Table -->

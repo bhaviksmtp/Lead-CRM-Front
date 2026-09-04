@@ -14,10 +14,26 @@
       </button>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loadingLead" class="d-flex flex-column align-items-center py-5 gap-3">
-      <div class="spinner-custom"></div>
-      <p style="color:var(--text-secondary);font-size:0.875rem;">Loading lead records...</p>
+    <!-- Skeleton Loading -->
+    <div v-if="loadingLead" class="row g-4">
+      <div class="col-12 col-lg-6">
+        <div class="card p-4">
+          <div class="skeleton mb-4" style="height: 20px; width: 140px;"></div>
+          <div v-for="i in 4" :key="i" class="mb-3">
+            <div class="skeleton mb-2" style="height: 12px; width: 80px;"></div>
+            <div class="skeleton" style="height: 38px; width: 100%; border-radius: 8px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="card p-4">
+          <div class="skeleton mb-4" style="height: 20px; width: 140px;"></div>
+          <div v-for="i in 4" :key="i" class="mb-3">
+            <div class="skeleton mb-2" style="height: 12px; width: 80px;"></div>
+            <div class="skeleton" style="height: 38px; width: 100%; border-radius: 8px;"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <form v-else @submit.prevent="updateLead">

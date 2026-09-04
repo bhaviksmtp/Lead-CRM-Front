@@ -11,10 +11,18 @@
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="d-flex flex-column align-items-center py-5 gap-3">
-      <div class="spinner-custom"></div>
-      <p style="color:var(--text-secondary);font-size:0.875rem;">Loading activities timeline...</p>
+    <!-- Skeleton Loading State -->
+    <div v-if="loading" class="card p-4">
+      <div v-for="i in 5" :key="i" class="mb-4 pb-2">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <div class="skeleton" style="height: 16px; width: 100px;"></div>
+            <div class="skeleton" style="height: 20px; width: 120px; border-radius: 10px;"></div>
+          </div>
+          <div class="skeleton" style="height: 12px; width: 80px;"></div>
+        </div>
+        <div class="skeleton" style="height: 14px; width: 70%;"></div>
+      </div>
     </div>
 
     <!-- Activities Feed -->

@@ -1,8 +1,36 @@
 <template>
-  <!-- Loading State -->
-  <div v-if="loading" class="d-flex flex-column align-items-center py-5 gap-3">
-    <div class="spinner-custom"></div>
-    <p style="color:var(--text-secondary);font-size:0.875rem;">Loading lead details...</p>
+  <!-- Skeleton Loading State -->
+  <div v-if="loading" class="d-flex flex-column gap-4">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div style="width: 50%;">
+          <div class="skeleton mb-2" style="height: 24px; width: 200px;"></div>
+          <div class="skeleton" style="height: 14px; width: 140px;"></div>
+        </div>
+        <div class="d-flex gap-2">
+          <div class="skeleton" style="height: 36px; width: 80px; border-radius: 8px;"></div>
+          <div class="skeleton" style="height: 36px; width: 90px; border-radius: 8px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="card p-3">
+          <div class="skeleton mb-3" style="height: 18px; width: 120px;"></div>
+          <div class="skeleton mb-2" style="height: 14px; width: 100%;"></div>
+          <div class="skeleton mb-2" style="height: 14px; width: 80%;"></div>
+          <div class="skeleton mb-2" style="height: 14px; width: 90%;"></div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card p-3">
+          <div class="skeleton mb-3" style="height: 18px; width: 150px;"></div>
+          <div class="skeleton mb-2" style="height: 40px; width: 100%; border-radius: 8px;"></div>
+          <div class="skeleton mb-2" style="height: 40px; width: 100%; border-radius: 8px;"></div>
+          <div class="skeleton" style="height: 40px; width: 100%; border-radius: 8px;"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div v-else-if="lead" class="d-flex flex-column gap-4">
@@ -322,9 +350,11 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button @click="showWhatsAppModal = false" class="btn btn-secondary">Close</button>
-          <button @click="saveWhatsAppActivity" class="btn btn-whatsapp" :disabled="!whatsAppNote.trim()">
-            <i class="bi bi-floppy"></i> Save Activity Log
+          <button @click="showWhatsAppModal = false" class="btn btn-secondary" :disabled="submittingWhatsApp">Close</button>
+          <button @click="saveWhatsAppActivity" class="btn btn-whatsapp" :disabled="!whatsAppNote.trim() || submittingWhatsApp">
+            <span v-if="submittingWhatsApp" class="spinner-border spinner-border-sm me-1" role="status"></span>
+            <i v-else class="bi bi-floppy"></i>
+            {{ submittingWhatsApp ? 'Saving...' : 'Save Activity Log' }}
           </button>
         </div>
       </div>
@@ -486,8 +516,11 @@ const handleWhatsAppAction = () => {
   showWhatsAppModal.value = true;
 };
 
+const submittingWhatsApp = ref(false);
+
 const saveWhatsAppActivity = async () => {
-  if (!whatsAppNote.value.trim()) return;
+  if (!whatsAppNote.value.trim() || submittingWhatsApp.value) return;
+  submittingWhatsApp.value = true;
   try {
     await leadsStore.logActivity(lead.value.id, {
       type: 'WhatsApp Message',
@@ -498,6 +531,8 @@ const saveWhatsAppActivity = async () => {
     whatsAppNote.value = '';
   } catch (err) {
     toast.error('Failed to log WhatsApp activity.');
+  } finally {
+    submittingWhatsApp.value = false;
   }
 };
 

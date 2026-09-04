@@ -14,10 +14,26 @@
       </button>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="d-flex flex-column align-items-center py-5 gap-3">
-      <div class="spinner-custom"></div>
-      <p style="color:var(--text-secondary);font-size:0.875rem;">Loading sources...</p>
+    <!-- Skeleton Loading -->
+    <div v-if="loading" class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Source Name</th>
+            <th>Source Code</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="i in 4" :key="i">
+            <td><div class="skeleton" style="height: 14px; width: 130px;"></div></td>
+            <td><div class="skeleton" style="height: 14px; width: 80px;"></div></td>
+            <td><div class="skeleton" style="height: 20px; width: 60px; border-radius: 10px;"></div></td>
+            <td><div class="skeleton" style="height: 28px; width: 60px; border-radius: 6px;"></div></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Table -->

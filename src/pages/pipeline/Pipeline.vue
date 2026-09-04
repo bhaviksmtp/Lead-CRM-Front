@@ -1,9 +1,32 @@
 <template>
-  <!-- Loading -->
-  <div v-if="loading" class="d-flex flex-column align-items-center py-5 gap-3">
-    <div class="spinner-custom"></div>
-    <p style="color:var(--text-secondary);font-size:0.875rem;">Loading Sales Pipeline...</p>
+  <!-- Skeleton Loading -->
+  <div v-if="loading" class="pipeline-container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex gap-2">
+        <div class="skeleton" style="height: 32px; width: 70px; border-radius: 20px;"></div>
+        <div class="skeleton" style="height: 32px; width: 100px; border-radius: 20px;"></div>
+        <div class="skeleton" style="height: 32px; width: 110px; border-radius: 20px;"></div>
+      </div>
+      <div class="skeleton" style="height: 32px; width: 90px; border-radius: 8px;"></div>
+    </div>
+    <div class="skeleton-kanban-board">
+      <div v-for="i in 4" :key="i" class="skeleton-kanban-col">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="skeleton" style="height: 18px; width: 100px;"></div>
+          <div class="skeleton" style="height: 18px; width: 40px; border-radius: 10px;"></div>
+        </div>
+        <div v-for="j in 3" :key="j" class="skeleton-kanban-item">
+          <div class="skeleton" style="height: 14px; width: 80%;"></div>
+          <div class="skeleton" style="height: 12px; width: 50%;"></div>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="skeleton" style="height: 12px; width: 60px;"></div>
+            <div class="skeleton" style="height: 20px; width: 50px; border-radius: 10px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
 
   <div v-else class="pipeline-container">
     <!-- Pipeline Toolbar / Navigation -->

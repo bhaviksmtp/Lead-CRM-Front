@@ -38,10 +38,22 @@
       </button>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="d-flex flex-column align-items-center py-5 gap-3">
-      <div class="spinner-custom"></div>
-      <p style="color:var(--text-secondary);font-size:0.875rem;">Loading roles and security configurations...</p>
+    <!-- Skeleton Loading State -->
+    <div v-if="loading" class="row g-4">
+      <div v-for="i in 3" :key="i" class="col-12 col-md-6 col-xl-4">
+        <div class="card p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="skeleton" style="height: 18px; width: 120px;"></div>
+            <div class="skeleton" style="height: 20px; width: 50px; border-radius: 10px;"></div>
+          </div>
+          <div class="skeleton mb-2" style="height: 12px; width: 90%;"></div>
+          <div class="skeleton mb-4" style="height: 12px; width: 60%;"></div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="skeleton" style="height: 28px; width: 60px; border-radius: 6px;"></div>
+            <div class="skeleton" style="height: 28px; width: 60px; border-radius: 6px;"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else>

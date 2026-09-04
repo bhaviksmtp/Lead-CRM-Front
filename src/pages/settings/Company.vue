@@ -11,10 +11,13 @@
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="d-flex flex-column align-items-center py-5 gap-3">
-      <div class="spinner-custom"></div>
-      <p style="color:var(--text-secondary);font-size:0.875rem;">Loading company settings...</p>
+    <!-- Skeleton Loading -->
+    <div v-if="loading" class="card p-4">
+      <div class="skeleton mb-4" style="height: 20px; width: 140px;"></div>
+      <div v-for="i in 3" :key="i" class="mb-3">
+        <div class="skeleton mb-2" style="height: 12px; width: 100px;"></div>
+        <div class="skeleton" style="height: 38px; width: 100%; border-radius: 8px;"></div>
+      </div>
     </div>
 
     <form v-else @submit.prevent="updateCompany">

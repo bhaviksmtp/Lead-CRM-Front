@@ -1,7 +1,9 @@
 <template>
+  <GlobalLoader />
   <router-view />
 </template>
 
 <script setup>
-// Main entry point wrapper
+import GlobalLoader from '@/components/GlobalLoader.vue';
 </script>
+
