@@ -64,6 +64,11 @@
           <span>Activity Log</span>
         </router-link>
 
+        <router-link to="/performance" class="menu-item" active-class="active" @click="sidebarOpen = false">
+          <span class="menu-icon"><i class="bi bi-award-fill"></i></span>
+          <span>Performance</span>
+        </router-link>
+
         <!-- Configuration Section -->
         <template v-if="canAny(['manage settings', 'manage users'])">
           <div class="menu-divider"></div>
@@ -133,6 +138,17 @@
           >
             <span class="menu-icon"><i class="bi bi-tags-fill"></i></span>
             <span>Lead Statuses</span>
+          </router-link>
+
+          <router-link
+            v-if="can('manage settings')"
+            to="/settings/whatsapp-templates"
+            class="menu-item"
+            active-class="active"
+            @click="sidebarOpen = false"
+          >
+            <span class="menu-icon"><i class="bi bi-whatsapp"></i></span>
+            <span>WhatsApp Templates</span>
           </router-link>
         </template>
       </nav>

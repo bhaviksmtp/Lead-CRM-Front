@@ -34,61 +34,45 @@
       </div>
     </div>
 
-    <!-- Fields Table -->
-    <div class="card">
-      <div class="card-body">
-        <div v-if="customFields.length" class="table-responsive">
-          <table class="table table-hover table-mobile-cards mb-0">
-            <thead>
-              <tr>
-                <th>Field Label</th>
-                <th>Field Key / Slug</th>
-                <th>Data Type</th>
-                <th>Required</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(f, idx) in customFields" :key="f.id || idx">
-                <td>
-                  <span class="td-label">Label</span>
-                  <span class="fw-700 text-dark">{{ f.label }}</span>
-                </td>
-                <td>
-                  <span class="td-label">Key</span>
-                  <code>{{ f.key }}</code>
-                </td>
-                <td>
-                  <span class="td-label">Type</span>
-                  <span class="badge badge-low">{{ f.type }}</span>
-                </td>
-                <td>
-                  <span class="td-label">Required</span>
-                  <span :class="['badge', f.required ? 'badge-high' : 'badge-low']">
-                    {{ f.required ? 'Yes' : 'No' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="td-label">Status</span>
-                  <span class="badge badge-won">Active</span>
-                </td>
-                <td>
-                  <span class="td-label">Actions</span>
-                  <button @click="deleteField(idx)" class="btn btn-danger btn-sm" title="Delete">
-                    <i class="bi bi-trash3"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-else class="empty-state py-4">
-          <span class="empty-state-title">No custom fields created</span>
-          <p class="empty-state-desc">Add custom attributes or click an industry preset above to get started.</p>
-        </div>
-      </div>
-    </div>
+    <!-- Fields Reusable DataTable -->
+    <DataTable
+      :columns="customFieldColumns"
+      :data="customFields"
+      :searchable="true"
+      search-placeholder="Search custom fields..."
+      :pagination="true"
+      :page-size="10"
+      empty-title="No custom fields created"
+      empty-description="Add custom attributes or click an industry preset above to get started."
+    >
+      <template #label="{ item }">
+        <span class="fw-700 text-dark">{{ item.label }}</span>
+      </template>
+
+      <template #key="{ item }">
+        <code>{{ item.key }}</code>
+      </template>
+
+      <template #type="{ item }">
+        <span class="badge badge-low">{{ item.type }}</span>
+      </template>
+
+      <template #required="{ item }">
+        <span :class="['badge', item.required ? 'badge-high' : 'badge-low']">
+          {{ item.required ? 'Yes' : 'No' }}
+        </span>
+      </template>
+
+      <template #status>
+        <span class="badge badge-won">Active</span>
+      </template>
+
+      <template #actions="{ index }">
+        <button @click="deleteField(index)" class="btn btn-danger btn-sm" title="Delete">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </template>
+    </DataTable>
 
     <!-- Add Field Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -137,6 +121,16 @@ import { useToast } from '@/composables/useToast';
 const toast = useToast();
 
 const showModal = ref(false);
+
+const customFieldColumns = [
+  { key: 'label', label: 'Field Label', sortable: true, minWidth: '180px' },
+  { key: 'key', label: 'Field Key / Slug', sortable: true, minWidth: '160px' },
+  { key: 'type', label: 'Data Type', sortable: true, minWidth: '120px' },
+  { key: 'required', label: 'Required', sortable: true, minWidth: '100px' },
+  { key: 'status', label: 'Status', minWidth: '100px' },
+  { key: 'actions', label: 'Actions', minWidth: '80px', align: 'end' }
+];
+
 const customFields = ref([
   { id: '1', label: 'Client Industry', key: 'client_industry', type: 'Dropdown', required: false },
   { id: '2', label: 'Project Timeline', key: 'project_timeline', type: 'Text', required: false },

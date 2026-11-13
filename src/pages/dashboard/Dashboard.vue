@@ -30,6 +30,31 @@
   </div>
 
   <div v-else class="d-flex flex-column gap-4">
+    <!-- Dashboard Top Bar: Date Range Filter -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <h2 class="page-header-title">
+          <i class="bi bi-grid-1x2-fill"></i> Dashboard &amp; Sales Analytics
+        </h2>
+        <p class="page-header-sub">Real-time performance metrics and sales conversion pipeline</p>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-secondary small fw-600"><i class="bi bi-calendar3 me-1"></i>Period:</span>
+        <div class="btn-group btn-group-sm" role="group">
+          <button
+            v-for="period in periodOptions"
+            :key="period.value"
+            type="button"
+            class="btn"
+            :class="selectedPeriod === period.value ? 'btn-primary' : 'btn-secondary'"
+            @click="setPeriod(period.value)"
+          >
+            {{ period.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Attention Banner (If overdue actions exist) -->
     <div
       v-if="stats.overdue_follow_ups > 0"
@@ -45,7 +70,7 @@
           </span>
         </div>
       </div>
-      <router-link to="/follow-ups" class="btn btn-danger btn-sm" style="font-size:0.8125rem;">
+      <router-link to="/follow-ups?tab=overdue" class="btn btn-danger btn-sm" style="font-size:0.8125rem;">
         View Follow-ups <i class="bi bi-arrow-right"></i>
       </router-link>
     </div>
@@ -74,9 +99,10 @@
         <span class="stat-footer"><i class="bi bi-clock-history text-primary-custom"></i> Awaiting qualification</span>
       </div>
 
-      <div
-        class="stat-card"
-        :style="stats.overdue_follow_ups > 0 ? 'border-color: #fca5a5; background: #fffbfb;' : ''"
+      <router-link
+        to="/follow-ups?tab=overdue"
+        class="stat-card text-decoration-none"
+        :style="stats.overdue_follow_ups > 0 ? 'border-color: #fca5a5; background: #fffbfb; cursor: pointer;' : 'cursor: pointer;'"
       >
         <div class="stat-card-header">
           <div>
@@ -92,17 +118,17 @@
         <span class="stat-footer" :style="stats.overdue_follow_ups > 0 ? 'color:var(--danger)' : ''">
           <i class="bi bi-bell-fill"></i> Requires follow-up
         </span>
-      </div>
+      </router-link>
 
       <div class="stat-card">
         <div class="stat-card-header">
           <div>
-            <span class="stat-label">Won Deals</span>
-            <div class="stat-value mt-1" style="color:var(--won);">{{ stats.won_leads || 0 }}</div>
+            <span class="stat-label">Converted Deals</span>
+            <div class="stat-value mt-1" style="color:var(--won);">{{ stats.converted_leads ?? stats.won_leads ?? 0 }}</div>
           </div>
-          <div class="stat-icon-well green"><i class="bi bi-trophy-fill"></i></div>
+          <div class="stat-icon-well green"><i class="bi bi-award-fill"></i></div>
         </div>
-        <span class="stat-footer"><i class="bi bi-check-all text-won"></i> Converted deals</span>
+        <span class="stat-footer"><i class="bi bi-check-all text-won"></i> Successfully converted</span>
       </div>
 
       <div class="stat-card">
@@ -185,6 +211,110 @@
       </div>
     </div>
 
+    <!-- Employee & Team Performance Section -->
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h3 class="card-title mb-1">
+              <i class="bi bi-award-fill text-warning"></i>
+              Employee &amp; Team Performance
+            </h3>
+            <span class="text-secondary small">
+              Sales conversion benchmarks, revenue won, and follow-up discipline
+            </span>
+          </div>
+          <router-link to="/performance" class="btn btn-secondary btn-sm">
+            <i class="bi bi-people-fill text-primary-custom me-1"></i> View All Employees
+          </router-link>
+        </div>
+
+        <DataTable
+          :columns="teamColumns"
+          :data="teamPerformance"
+          :loading="loading"
+          :pagination="false"
+          empty-title="No team performance data available"
+        >
+          <template #rank="{ index }">
+            <span v-if="index === 0" class="badge-rank gold" title="1st Place">🥇</span>
+            <span v-else-if="index === 1" class="badge-rank silver" title="2nd Place">🥈</span>
+            <span v-else-if="index === 2" class="badge-rank bronze" title="3rd Place">🥉</span>
+            <span v-else class="text-muted small">#{{ index + 1 }}</span>
+          </template>
+
+          <template #employee="{ item }">
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar-circle-sm" :style="getAvatarStyle(item.name)">
+                {{ getInitials(item.name) }}
+              </div>
+              <div>
+                <div class="fw-700 text-dark" style="font-size:0.875rem;">{{ item.name }}</div>
+                <div class="text-secondary small" style="font-size:0.75rem;">{{ item.email }}</div>
+              </div>
+            </div>
+          </template>
+
+          <template #role="{ item }">
+            <span :class="['badge', getRoleBadgeClass(item.role)]" style="font-size:0.75rem;">
+              {{ item.role }}
+            </span>
+          </template>
+
+          <template #leads_count="{ item }">
+            <span class="fw-700">{{ item.leads_count }}</span>
+            <div class="text-secondary small" style="font-size:0.7rem;">
+              {{ item.open_count ?? (item.leads_count - item.won_count - item.lost_count) }} open
+            </div>
+          </template>
+
+          <template #won_lost="{ item }">
+            <div class="d-inline-flex align-items-center gap-1">
+              <span class="badge badge-won px-2" title="Converted Leads">{{ item.won_count }} Converted</span>
+              <span class="badge badge-lost px-2" title="Dropped Leads">{{ item.lost_count }} Dropped</span>
+            </div>
+          </template>
+
+          <template #conversion_rate="{ item }">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-700 small" :class="item.conversion_rate >= 20 ? 'text-success' : 'text-primary-custom'">
+                {{ item.conversion_rate }}%
+              </span>
+              <span class="text-muted small" style="font-size:0.6875rem;">conversion rate</span>
+            </div>
+            <div class="progress" style="height: 5px;">
+              <div
+                class="progress-bar"
+                role="progressbar"
+                :style="`width:${Math.min(100, item.conversion_rate)}%;background:${item.conversion_rate >= 20 ? 'var(--won)' : 'var(--primary)'};`"
+              ></div>
+            </div>
+          </template>
+
+          <template #won_revenue="{ item }">
+            <span class="fw-800 text-won" style="font-size:0.925rem;">
+              {{ formatCurrency(item.won_revenue) }}
+            </span>
+          </template>
+
+          <template #follow_ups="{ item }">
+            <span class="badge badge-completed me-1" title="Completed Tasks">
+              <i class="bi bi-check-circle-fill me-1"></i>{{ item.follow_ups_completed }}
+            </span>
+            <span v-if="item.follow_ups_missed > 0" class="badge badge-missed" title="Missed Tasks">
+              <i class="bi bi-x-circle-fill me-1"></i>{{ item.follow_ups_missed }}
+            </span>
+          </template>
+
+          <template #action="{ item }">
+            <router-link :to="`/leads?assigned_to=${item.id}`" class="btn btn-secondary btn-sm py-0 px-2" style="font-size:0.75rem;">
+              <i class="bi bi-eye"></i> Leads
+            </router-link>
+          </template>
+        </DataTable>
+      </div>
+    </div>
+
     <!-- Today's Follow-up Schedule -->
     <div class="card">
       <div class="card-body">
@@ -198,76 +328,61 @@
           </router-link>
         </div>
 
-        <div v-if="todayFollowUpsList.length" class="table-responsive">
-          <table class="table table-hover table-mobile-cards mb-0">
-            <thead>
-              <tr>
-                <th>Lead Name</th>
-                <th>Contact Info</th>
-                <th>Type</th>
-                <th>Time</th>
-                <th>Executive</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in todayFollowUpsList" :key="item.id">
-                <td>
-                  <span class="td-label">Lead Name</span>
-                  <router-link :to="`/leads/${item.lead_id}`" class="fw-600 text-dark text-decoration-none">
-                    {{ item.lead?.name || 'N/A' }}
-                  </router-link>
-                  <div style="font-size:0.75rem;color:var(--text-secondary);">{{ item.lead?.company_name || '—' }}</div>
-                </td>
-                <td>
-                  <span class="td-label">Contact</span>
-                  <div style="font-size:0.875rem;font-weight:500;">{{ formatPhone(item.lead?.phone) }}</div>
-                </td>
-                <td>
-                  <span class="td-label">Type</span>
-                  <span :class="['badge', getFollowUpTypeBadgeClass(item.type)]">
-                    <i :class="getFollowUpTypeIcon(item.type)"></i>
-                    {{ item.type }}
-                  </span>
-                </td>
-                <td>
-                  <span class="td-label">Time</span>
-                  <span class="fw-600"><i class="bi bi-clock me-1 text-muted"></i>{{ formatTime(item.scheduled_at) }}</span>
-                </td>
-                <td>
-                  <span class="td-label">Executive</span>
-                  <span class="d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-person text-secondary"></i>
-                    {{ item.assigned_user?.name || item.lead?.assigned_user?.name || 'Unassigned' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="td-label">Actions</span>
-                  <div class="d-flex flex-wrap gap-1">
-                    <button @click="triggerCall(item.lead?.phone)" class="btn btn-secondary btn-sm" title="Call">
-                      <i class="bi bi-telephone-fill"></i>
-                    </button>
-                    <button @click="handleWhatsAppAction(item.lead)" class="btn btn-whatsapp btn-sm" title="WhatsApp">
-                      <i class="bi bi-whatsapp"></i>
-                    </button>
-                    <button @click="openRescheduleModal(item)" class="btn btn-secondary btn-sm">
-                      <i class="bi bi-calendar-event"></i>
-                    </button>
-                    <button @click="markComplete(item)" class="btn btn-primary btn-sm">
-                      <i class="bi bi-check-lg"></i> Complete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          :columns="todayFollowUpColumns"
+          :data="todayFollowUpsList"
+          :loading="loading"
+          :pagination="false"
+          empty-icon="bi-calendar-check"
+          empty-title="No follow-ups scheduled for today"
+          empty-description="You're all caught up for today. Visit Leads to schedule new actions."
+        >
+          <template #lead="{ item }">
+            <router-link :to="`/leads/${item.lead_id}`" class="fw-600 text-dark text-decoration-none">
+              {{ item.lead?.name || 'N/A' }}
+            </router-link>
+            <div style="font-size:0.75rem;color:var(--text-secondary);">{{ item.lead?.company_name || '—' }}</div>
+          </template>
 
-        <div v-else class="empty-state py-4">
-          <div class="empty-state-icon"><i class="bi bi-calendar-check"></i></div>
-          <span class="empty-state-title">No follow-ups scheduled for today</span>
-          <p class="empty-state-desc">You're all caught up for today. Visit Leads to schedule new actions.</p>
-        </div>
+          <template #contact="{ item }">
+            <div style="font-size:0.875rem;font-weight:500;">{{ formatPhone(item.lead?.phone) }}</div>
+          </template>
+
+          <template #type="{ item }">
+            <span :class="['badge', getFollowUpTypeBadgeClass(item.type)]">
+              <i :class="getFollowUpTypeIcon(item.type)"></i>
+              {{ item.type }}
+            </span>
+          </template>
+
+          <template #time="{ item }">
+            <span class="fw-600"><i class="bi bi-clock me-1 text-muted"></i>{{ formatTime(item.scheduled_at) }}</span>
+          </template>
+
+          <template #executive="{ item }">
+            <span class="d-inline-flex align-items-center gap-1">
+              <i class="bi bi-person text-secondary"></i>
+              {{ item.assigned_user?.name || item.lead?.assigned_user?.name || 'Unassigned' }}
+            </span>
+          </template>
+
+          <template #actions="{ item }">
+            <div class="d-flex flex-wrap gap-1">
+              <button @click="triggerCall(item.lead?.phone)" class="btn btn-secondary btn-sm" title="Call">
+                <i class="bi bi-telephone-fill"></i>
+              </button>
+              <button @click="handleWhatsAppAction(item.lead)" class="btn btn-whatsapp btn-sm" title="WhatsApp">
+                <i class="bi bi-whatsapp"></i>
+              </button>
+              <button @click="openRescheduleModal(item)" class="btn btn-secondary btn-sm" title="Reschedule">
+                <i class="bi bi-calendar-event"></i>
+              </button>
+              <button @click="markComplete(item)" class="btn btn-primary btn-sm" title="Complete">
+                <i class="bi bi-check-lg"></i> Complete
+              </button>
+            </div>
+          </template>
+        </DataTable>
       </div>
     </div>
 
@@ -387,6 +502,43 @@ const loading = ref(true);
 const stats = ref({});
 const charts = ref({});
 const todayFollowUpsList = ref([]);
+const teamPerformance = ref([]);
+
+const selectedPeriod = ref('all');
+const periodOptions = [
+  { label: 'All Time', value: 'all' },
+  { label: 'Today', value: 'today' },
+  { label: 'This Week', value: 'this_week' },
+  { label: 'This Month', value: 'this_month' },
+  { label: 'This Quarter', value: 'this_quarter' },
+  { label: 'This Year', value: 'this_year' }
+];
+
+const setPeriod = (period) => {
+  selectedPeriod.value = period;
+  loadDashboard();
+};
+
+const teamColumns = [
+  { key: 'rank', label: '#', align: 'center', width: '50px', minWidth: '40px' },
+  { key: 'employee', label: 'Executive', sortable: true, sortKey: 'name', minWidth: '160px' },
+  { key: 'role', label: 'Role', sortable: true, minWidth: '110px' },
+  { key: 'leads_count', label: 'Assigned Leads', align: 'center', sortable: true, minWidth: '120px' },
+  { key: 'won_lost', label: 'Converted / Dropped', align: 'center', minWidth: '160px' },
+  { key: 'conversion_rate', label: 'Conversion Rate', sortable: true, minWidth: '130px' },
+  { key: 'won_revenue', label: 'Revenue Converted', sortable: true, minWidth: '130px' },
+  { key: 'follow_ups', label: 'Follow-up Tasks', minWidth: '130px' },
+  { key: 'action', label: 'Action', align: 'center', minWidth: '90px' }
+];
+
+const todayFollowUpColumns = [
+  { key: 'lead', label: 'Lead Name', sortable: true, sortKey: 'lead.name', minWidth: '160px' },
+  { key: 'contact', label: 'Contact Info', minWidth: '140px' },
+  { key: 'type', label: 'Type', sortable: true, minWidth: '110px' },
+  { key: 'time', label: 'Time', sortable: true, sortKey: 'scheduled_at', minWidth: '100px' },
+  { key: 'executive', label: 'Executive', sortable: true, sortKey: 'assigned_user.name', minWidth: '130px' },
+  { key: 'actions', label: 'Actions', minWidth: '140px', align: 'end' }
+];
 
 const activeModal = ref(null);
 const currentFollowUp = ref(null);
@@ -400,16 +552,58 @@ const whatsAppNote = ref('');
 const loadDashboard = async () => {
   loading.value = true;
   try {
-    const res = await dashboardApi.getStats();
+    const params = selectedPeriod.value !== 'all' ? { date_range: selectedPeriod.value } : {};
+    const res = await dashboardApi.getStats(params);
     const d = res.data.data;
     stats.value = d.stats || {};
     charts.value = d.charts || {};
     todayFollowUpsList.value = d.today_follow_ups_list || [];
+    const rawTeam = d.team_performance || [];
+    teamPerformance.value = rawTeam.filter(u => {
+      const r = (u.role || '').toLowerCase();
+      return !r.includes('admin');
+    });
   } catch (err) {
     toast.error('Failed to load dashboard data.');
   } finally {
     loading.value = false;
   }
+};
+
+const getRoleBadgeClass = (role) => {
+  switch (role) {
+    case 'Company Admin':
+    case 'Super Admin':
+      return 'badge-primary';
+    case 'Manager':
+      return 'badge-medium';
+    default:
+      return 'badge-low';
+  }
+};
+
+const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const avatarPalette = [
+  { bg: '#e0e7ff', color: '#4338ca' },
+  { bg: '#fef3c7', color: '#92400e' },
+  { bg: '#d1fae5', color: '#065f46' },
+  { bg: '#fce7f3', color: '#9d174d' },
+  { bg: '#e0f2fe', color: '#0369a1' },
+  { bg: '#ede9fe', color: '#5b21b6' },
+];
+
+const getAvatarStyle = (name) => {
+  if (!name) return { backgroundColor: '#f1f5f9', color: '#64748b' };
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+  const color = avatarPalette[Math.abs(hash) % avatarPalette.length];
+  return { backgroundColor: color.bg, color: color.color };
 };
 
 onMounted(() => {
@@ -493,3 +687,25 @@ const submitReschedule = async () => {
   }
 };
 </script>
+
+<style scoped>
+.avatar-circle-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.badge-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+</style>

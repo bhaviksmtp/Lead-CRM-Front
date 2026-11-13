@@ -14,85 +14,66 @@
       </button>
     </div>
 
-    <!-- Skeleton Loading -->
-    <div v-if="loading" class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Stage Name</th>
-            <th>Kanban Position</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="i in 4" :key="i">
-            <td><div class="skeleton" style="height: 14px; width: 140px;"></div></td>
-            <td><div class="skeleton" style="height: 20px; width: 40px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 20px; width: 60px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 28px; width: 60px; border-radius: 6px;"></div></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Reusable DataTable -->
+    <DataTable
+      :columns="stageColumns"
+      :data="stages"
+      :loading="loading"
+      :searchable="true"
+      search-placeholder="Search stage name..."
+      :pagination="true"
+      :page-size="10"
+      empty-icon="bi-flag"
+      empty-title="No stages configured"
+      empty-description="Create pipeline stages to organize your leads on the Kanban board."
+    >
+      <template #name="{ item }">
+        <span class="fw-600 text-dark">{{ item.name }}</span>
+      </template>
 
-    <!-- Table -->
-    <div v-else-if="stages.length" class="table-responsive">
-      <table class="table table-hover table-mobile-cards mb-0">
-        <thead>
-          <tr>
-            <th>Stage Name</th>
-            <th>Kanban Position</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="stage in stages" :key="stage.id">
-            <td>
-              <span class="td-label">Stage</span>
-              <span class="fw-600 text-dark">{{ stage.name }}</span>
-            </td>
-            <td>
-              <span class="td-label">Position</span>
-              <span class="badge badge-low" style="font-weight:700;color:var(--primary);">
-                #{{ stage.position }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Status</span>
-              <span :class="['badge', stage.is_active ? 'badge-completed' : 'badge-cancelled']">
-                <i :class="stage.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
-                {{ stage.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Actions</span>
-              <div class="d-flex gap-2">
-                <button @click="openEditModal(stage)" class="btn btn-secondary btn-sm" title="Edit Stage">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
-                <button @click="deleteConfirm(stage)" class="btn btn-danger btn-sm" title="Delete Stage">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <template #position="{ item }">
+        <span class="badge badge-low" style="font-weight:700;color:var(--primary);">
+          #{{ item.position }}
+        </span>
+      </template>
 
-    <!-- Empty -->
-    <div v-else class="card">
-      <div class="card-body empty-state">
-        <div class="empty-state-icon"><i class="bi bi-flag"></i></div>
-        <span class="empty-state-title">No stages configured</span>
-        <p class="empty-state-desc">Create pipeline stages to organize your leads on the Kanban board.</p>
-        <button @click="openCreateModal" class="btn btn-primary mt-2">
-          <i class="bi bi-plus-lg"></i> Add First Stage
-        </button>
-      </div>
-    </div>
+      <template #is_active="{ item }">
+        <span :class="['badge', item.is_active ? 'badge-completed' : 'badge-cancelled']">
+          <i :class="item.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
+          {{ item.is_active ? 'Active' : 'Inactive' }}
+        </span>
+      </template>
+
+      <template #actions="{ item }">
+        <div class="d-flex gap-2">
+          <button @click="openEditModal(item)" class="btn btn-secondary btn-sm" title="Edit Stage">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button
+            v-if="!['converted', 'dropped', 'won', 'lost', 'new lead', 'new', 'closed won', 'closed lost'].includes((item.name || '').toLowerCase())"
+            @click="deleteConfirm(item)"
+            class="btn btn-danger btn-sm"
+            title="Delete Stage"
+          >
+            <i class="bi bi-trash3"></i>
+          </button>
+          <span v-else class="badge bg-light text-muted border py-1 px-2 align-self-center small" title="Protected System Stage">
+            <i class="bi bi-lock-fill me-1"></i>System
+          </span>
+        </div>
+      </template>
+
+      <template #empty>
+        <div class="empty-state py-5">
+          <div class="empty-state-icon"><i class="bi bi-flag"></i></div>
+          <span class="empty-state-title">No stages configured</span>
+          <p class="empty-state-desc">Create pipeline stages to organize your leads on the Kanban board.</p>
+          <button @click="openCreateModal" class="btn btn-primary mt-2">
+            <i class="bi bi-plus-lg"></i> Add First Stage
+          </button>
+        </div>
+      </template>
+    </DataTable>
 
     <!-- Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -165,6 +146,14 @@ const { confirmDelete } = useSwal();
 const loading = ref(true);
 const saving = ref(false);
 const stages = ref([]);
+
+const stageColumns = [
+  { key: 'name', label: 'Stage Name', sortable: true, minWidth: '200px' },
+  { key: 'position', label: 'Kanban Position', sortable: true, minWidth: '150px' },
+  { key: 'is_active', label: 'Status', sortable: true, minWidth: '110px' },
+  { key: 'actions', label: 'Actions', minWidth: '150px', align: 'end' }
+];
+
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);

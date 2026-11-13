@@ -76,9 +76,12 @@ export function useIndianFormat() {
 
   const formatPhone = (phone) => {
     if (!phone) return '-';
-    let cleaned = phone.replace(/\D/g, '');
+    let cleaned = String(phone).replace(/\D/g, '');
     if (cleaned.startsWith('91') && cleaned.length === 12) {
       return `+91 ${cleaned.substring(2, 7)}-${cleaned.substring(7)}`;
+    }
+    if (cleaned.length === 10) {
+      return `+91 ${cleaned.substring(0, 5)}-${cleaned.substring(5)}`;
     }
     return phone;
   };

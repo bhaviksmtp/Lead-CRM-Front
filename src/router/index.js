@@ -17,6 +17,7 @@ import LeadDetails from '@/pages/leads/LeadDetails.vue';
 import Pipeline from '@/pages/pipeline/Pipeline.vue';
 import FollowUpList from '@/pages/followups/FollowUpList.vue';
 import ActivityList from '@/pages/activities/ActivityList.vue';
+import EmployeePerformance from '@/pages/performance/EmployeePerformance.vue';
 
 // Settings Pages
 import Company from '@/pages/settings/Company.vue';
@@ -25,6 +26,7 @@ import RolesPermissions from '@/pages/settings/RolesPermissions.vue';
 import Sources from '@/pages/settings/Sources.vue';
 import Statuses from '@/pages/settings/Statuses.vue';
 import Stages from '@/pages/settings/Stages.vue';
+import WhatsAppTemplates from '@/pages/settings/WhatsAppTemplates.vue';
 
 const routes = [
   {
@@ -97,6 +99,12 @@ const routes = [
         meta: { title: '🕒 Activity Log' }
       },
       {
+        path: 'performance',
+        name: 'EmployeePerformance',
+        component: EmployeePerformance,
+        meta: { title: '🏆 Employee Performance Analytics' }
+      },
+      {
         path: 'settings/company',
         name: 'CompanySettings',
         component: Company,
@@ -131,6 +139,12 @@ const routes = [
         name: 'StageSettings',
         component: Stages,
         meta: { title: '🏁 Pipeline Stages Settings', permission: 'manage settings' }
+      },
+      {
+        path: 'settings/whatsapp-templates',
+        name: 'WhatsAppTemplatesSettings',
+        component: WhatsAppTemplates,
+        meta: { title: '💬 WhatsApp Templates', permission: 'manage settings' }
       }
     ]
   },

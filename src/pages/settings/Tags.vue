@@ -14,50 +14,41 @@
       </button>
     </div>
 
-    <!-- Tags List -->
-    <div class="card">
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover table-mobile-cards mb-0">
-            <thead>
-              <tr>
-                <th>Tag Name</th>
-                <th>Preview Badge</th>
-                <th>Color Scheme</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(tag, idx) in tags" :key="tag.id || idx">
-                <td>
-                  <span class="td-label">Name</span>
-                  <span class="fw-700 text-dark">{{ tag.name }}</span>
-                </td>
-                <td>
-                  <span class="td-label">Preview</span>
-                  <span
-                    class="badge"
-                    :style="`background:${tag.bg};color:${tag.color};font-size:0.8125rem;font-weight:700;`"
-                  >
-                    <i class="bi bi-tag-fill me-1"></i>{{ tag.name }}
-                  </span>
-                </td>
-                <td>
-                  <span class="td-label">Color</span>
-                  <span style="font-size:0.8125rem;color:var(--text-secondary);">{{ tag.label }}</span>
-                </td>
-                <td>
-                  <span class="td-label">Actions</span>
-                  <button @click="deleteTag(idx)" class="btn btn-danger btn-sm" title="Delete">
-                    <i class="bi bi-trash3"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <!-- Tags Reusable DataTable -->
+    <DataTable
+      :columns="tagColumns"
+      :data="tags"
+      :searchable="true"
+      search-placeholder="Search tags..."
+      :pagination="true"
+      :page-size="10"
+      empty-icon="bi-tags"
+      empty-title="No tags configured"
+      empty-description="Create tags to categorize your customers."
+    >
+      <template #name="{ item }">
+        <span class="fw-700 text-dark">{{ item.name }}</span>
+      </template>
+
+      <template #preview="{ item }">
+        <span
+          class="badge"
+          :style="`background:${item.bg};color:${item.color};font-size:0.8125rem;font-weight:700;`"
+        >
+          <i class="bi bi-tag-fill me-1"></i>{{ item.name }}
+        </span>
+      </template>
+
+      <template #color="{ item }">
+        <span style="font-size:0.8125rem;color:var(--text-secondary);">{{ item.label }}</span>
+      </template>
+
+      <template #actions="{ index }">
+        <button @click="deleteTag(index)" class="btn btn-danger btn-sm" title="Delete">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </template>
+    </DataTable>
 
     <!-- Add Tag Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -100,6 +91,14 @@ import { useToast } from '@/composables/useToast';
 const toast = useToast();
 
 const showModal = ref(false);
+
+const tagColumns = [
+  { key: 'name', label: 'Tag Name', sortable: true, minWidth: '180px' },
+  { key: 'preview', label: 'Preview Badge', minWidth: '140px' },
+  { key: 'color', label: 'Color Scheme', sortable: true, sortKey: 'label', minWidth: '160px' },
+  { key: 'actions', label: 'Actions', minWidth: '80px', align: 'end' }
+];
+
 const tags = ref([
   { id: '1', name: 'VIP', bg: '#dcfce7', color: '#15803d', label: 'Green (VIP)' },
   { id: '2', name: 'High Value', bg: '#e0e7ff', color: '#4338ca', label: 'Indigo (High Value)' },

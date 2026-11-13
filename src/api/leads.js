@@ -19,6 +19,9 @@ export default {
   getTimeline(id) {
     return api.get(`/leads/${id}/timeline`);
   },
+  getNotes(id) {
+    return api.get(`/leads/${id}/notes`);
+  },
   addNote(id, data) {
     return api.post(`/leads/${id}/notes`, data);
   },

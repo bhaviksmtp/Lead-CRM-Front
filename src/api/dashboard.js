@@ -1,7 +1,10 @@
 import api from './axios';
 
 export default {
-  getStats() {
-    return api.get('/dashboard');
+  getStats(params = {}) {
+    return api.get('/dashboard', { params });
+  },
+  getEmployeePerformance(params = {}) {
+    return api.get('/employee-performance', { params });
   }
 };

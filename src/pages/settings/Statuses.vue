@@ -14,76 +14,52 @@
       </button>
     </div>
 
-    <!-- Skeleton Loading -->
-    <div v-if="loading" class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Status Name</th>
-            <th>State</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="i in 4" :key="i">
-            <td><div class="skeleton" style="height: 14px; width: 140px;"></div></td>
-            <td><div class="skeleton" style="height: 20px; width: 60px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 28px; width: 60px; border-radius: 6px;"></div></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Reusable DataTable -->
+    <DataTable
+      :columns="statusColumns"
+      :data="statuses"
+      :loading="loading"
+      :searchable="true"
+      search-placeholder="Search status name..."
+      :pagination="true"
+      :page-size="10"
+      empty-icon="bi-tags"
+      empty-title="No statuses configured"
+      empty-description="Create statuses to categorize lead follow-up states."
+    >
+      <template #name="{ item }">
+        <span class="fw-600 text-dark">{{ item.name }}</span>
+      </template>
 
-    <!-- Table -->
-    <div v-else-if="statuses.length" class="table-responsive">
-      <table class="table table-hover table-mobile-cards mb-0">
-        <thead>
-          <tr>
-            <th>Status Name</th>
-            <th>State</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="status in statuses" :key="status.id">
-            <td>
-              <span class="td-label">Status</span>
-              <span class="fw-600 text-dark">{{ status.name }}</span>
-            </td>
-            <td>
-              <span class="td-label">State</span>
-              <span :class="['badge', status.is_active ? 'badge-completed' : 'badge-cancelled']">
-                <i :class="status.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
-                {{ status.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Actions</span>
-              <div class="d-flex gap-2">
-                <button @click="openEditModal(status)" class="btn btn-secondary btn-sm" title="Edit Status">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
-                <button @click="deleteConfirm(status)" class="btn btn-danger btn-sm" title="Delete Status">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <template #is_active="{ item }">
+        <span :class="['badge', item.is_active ? 'badge-completed' : 'badge-cancelled']">
+          <i :class="item.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
+          {{ item.is_active ? 'Active' : 'Inactive' }}
+        </span>
+      </template>
 
-    <!-- Empty -->
-    <div v-else class="card">
-      <div class="card-body empty-state">
-        <div class="empty-state-icon"><i class="bi bi-tags"></i></div>
-        <span class="empty-state-title">No statuses configured</span>
-        <p class="empty-state-desc">Create statuses to categorize lead follow-up states.</p>
-        <button @click="openCreateModal" class="btn btn-primary mt-2">
-          <i class="bi bi-plus-lg"></i> Add First Status
-        </button>
-      </div>
-    </div>
+      <template #actions="{ item }">
+        <div class="d-flex gap-2">
+          <button @click="openEditModal(item)" class="btn btn-secondary btn-sm" title="Edit Status">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button @click="deleteConfirm(item)" class="btn btn-danger btn-sm" title="Delete Status">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </template>
+
+      <template #empty>
+        <div class="empty-state py-5">
+          <div class="empty-state-icon"><i class="bi bi-tags"></i></div>
+          <span class="empty-state-title">No statuses configured</span>
+          <p class="empty-state-desc">Create statuses to categorize lead follow-up states.</p>
+          <button @click="openCreateModal" class="btn btn-primary mt-2">
+            <i class="bi bi-plus-lg"></i> Add First Status
+          </button>
+        </div>
+      </template>
+    </DataTable>
 
     <!-- Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -143,6 +119,13 @@ const { confirmDelete } = useSwal();
 const loading = ref(true);
 const saving = ref(false);
 const statuses = ref([]);
+
+const statusColumns = [
+  { key: 'name', label: 'Status Name', sortable: true, minWidth: '220px' },
+  { key: 'is_active', label: 'State', sortable: true, minWidth: '120px' },
+  { key: 'actions', label: 'Actions', minWidth: '150px', align: 'end' }
+];
+
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);

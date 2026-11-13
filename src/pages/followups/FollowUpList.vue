@@ -22,154 +22,125 @@
       >
         <i :class="tab.icon"></i>
         {{ tab.label }}
+        <span v-if="currentTab === tab.value && !loading" class="badge bg-white text-dark ms-1 shadow-xs" style="font-size:0.7rem;font-weight:700;">
+          {{ followUps.length }}
+        </span>
       </button>
     </div>
 
-    <!-- Skeleton Loading -->
-    <div v-if="loading" class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Customer / Lead</th>
-            <th>Type</th>
-            <th>Scheduled</th>
-            <th>Status</th>
-            <th>Notes</th>
-            <th>Executive</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="i in 5" :key="i">
-            <td>
-              <div class="skeleton mb-1" style="height: 14px; width: 120px;"></div>
-              <div class="skeleton" style="height: 10px; width: 70px;"></div>
-            </td>
-            <td><div class="skeleton" style="height: 20px; width: 60px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 14px; width: 100px;"></div></td>
-            <td><div class="skeleton" style="height: 20px; width: 70px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 14px; width: 150px;"></div></td>
-            <td><div class="skeleton" style="height: 14px; width: 80px;"></div></td>
-            <td><div class="skeleton" style="height: 28px; width: 70px; border-radius: 6px;"></div></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Reusable DataTable -->
+    <DataTable
+      :columns="followUpColumns"
+      :data="followUps"
+      :loading="loading"
+      :searchable="true"
+      search-placeholder="Search contact, notes..."
+      :pagination="true"
+      :page-size="10"
+      empty-icon="bi-calendar-x"
+      empty-title="No follow-ups found"
+      :empty-description="`No scheduled tasks under '${activeTabName}' category.`"
+    >
+      <!-- Slot: Customer / Lead -->
+      <template #customer="{ item }">
+        <router-link v-if="item.lead?.id" :to="`/leads/${item.lead.id}`" class="fw-700 text-dark text-decoration-none hover-primary">
+          {{ item.lead?.name || 'N/A' }}
+        </router-link>
+        <div v-else class="fw-700 text-dark">{{ item.lead?.name || 'N/A' }}</div>
+        <div class="mt-1 d-flex align-items-center gap-1">
+          <span v-if="item.lead?.company_name" class="text-secondary small" :title="item.lead.company_name">
+            <i class="bi bi-building text-muted me-1"></i>{{ item.lead.company_name }}
+          </span>
+          <span v-else class="badge bg-light text-secondary border px-1 py-0" style="font-size:0.6875rem;">
+            <i class="bi bi-person me-1"></i>Individual
+          </span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text-muted);" class="mt-1">
+          <i class="bi bi-telephone me-1"></i>{{ formatPhone(item.lead?.phone) }}
+        </div>
+      </template>
 
-    <!-- Follow-ups Table -->
-    <div v-else-if="followUps.length" class="table-responsive">
-      <table class="table table-hover table-mobile-cards mb-0">
-        <thead>
-          <tr>
-            <th>Customer / Lead</th>
-            <th>Type</th>
-            <th>Scheduled</th>
-            <th>Status</th>
-            <th>Notes</th>
-            <th>Executive</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in followUps" :key="item.id">
-            <td>
-              <span class="td-label">Customer</span>
-              <div class="fw-600 text-dark">{{ item.lead?.name || 'N/A' }}</div>
-              <div style="font-size:0.75rem;color:var(--text-secondary);">{{ item.lead?.company_name || '—' }}</div>
-              <div style="font-size:0.75rem;color:var(--text-muted);" class="mt-1">
-                <i class="bi bi-telephone me-1"></i>{{ formatPhone(item.lead?.phone) }}
-              </div>
-            </td>
-            <td>
-              <span class="td-label">Type</span>
-              <span :class="['badge', getFollowUpTypeBadgeClass(item.type)]">
-                <i :class="getFollowUpTypeIcon(item.type)"></i>
-                {{ item.type }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Scheduled</span>
-              <span
-                class="fw-600"
-                :style="isOverdue(item) ? 'color:var(--danger)' : ''"
-              >
-                <i class="bi bi-clock me-1 text-muted"></i>
-                {{ formatDateTime(item.scheduled_at) }}
-              </span>
-              <span v-if="isOverdue(item)" class="badge badge-missed ms-1">
-                <i class="bi bi-exclamation-circle-fill"></i> Overdue
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Status</span>
-              <span :class="['badge', `badge-${item.status}`]">
-                <i v-if="item.status === 'completed'" class="bi bi-check-circle-fill"></i>
-                <i v-else-if="item.status === 'missed'" class="bi bi-x-circle-fill"></i>
-                <i v-else class="bi bi-hourglass-split"></i>
-                {{ item.status }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Notes</span>
-              <span style="font-size:0.8125rem;color:var(--text-secondary);">{{ item.notes || '—' }}</span>
-            </td>
-            <td>
-              <span class="td-label">Executive</span>
-              <span style="font-size:0.875rem;" class="d-inline-flex align-items-center gap-1">
-                <i class="bi bi-person text-secondary"></i>
-                {{ item.assigned_user?.name || 'Unassigned' }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Actions</span>
-              <div class="d-flex flex-wrap gap-1">
-                <button @click="triggerCall(item.lead?.phone)" class="btn btn-secondary btn-sm" title="Call">
-                  <i class="bi bi-telephone-fill"></i>
-                </button>
-                <button @click="triggerWhatsApp(item.lead)" class="btn btn-whatsapp btn-sm" title="WhatsApp">
-                  <i class="bi bi-whatsapp"></i>
-                </button>
-                <button
-                  v-if="item.status === 'pending' || item.status === 'missed'"
-                  @click="openRescheduleModal(item)"
-                  class="btn btn-secondary btn-sm"
-                  title="Reschedule"
-                >
-                  <i class="bi bi-calendar-event"></i> Reschedule
-                </button>
-                <button
-                  v-if="item.status === 'pending' || item.status === 'missed'"
-                  @click="openCompleteModal(item)"
-                  class="btn btn-primary btn-sm"
-                  title="Complete"
-                >
-                  <i class="bi bi-check-lg"></i> Complete
-                </button>
-                <button
-                  v-if="hasRole(['Super Admin', 'Company Admin'])"
-                  @click="deleteConfirm(item)"
-                  class="btn btn-danger btn-sm"
-                  title="Delete"
-                >
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- Slot: Type -->
+      <template #type="{ item }">
+        <span :class="['badge', getFollowUpTypeBadgeClass(item.type)]">
+          <i :class="getFollowUpTypeIcon(item.type)"></i>
+          {{ item.type }}
+        </span>
+      </template>
 
-    <!-- Empty State -->
-    <div v-else class="card">
-      <div class="card-body empty-state">
-        <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
-        <span class="empty-state-title">No follow-ups found</span>
-        <p class="empty-state-desc">
-          No scheduled tasks under "<strong>{{ activeTabName }}</strong>" category.
-        </p>
-      </div>
-    </div>
+      <!-- Slot: Scheduled -->
+      <template #scheduled_at="{ item }">
+        <span
+          class="fw-600"
+          :style="isOverdue(item) ? 'color:var(--danger)' : ''"
+        >
+          <i class="bi bi-clock me-1 text-muted"></i>
+          {{ formatDateTime(item.scheduled_at) }}
+        </span>
+        <span v-if="isOverdue(item)" class="badge badge-missed ms-1">
+          <i class="bi bi-exclamation-circle-fill"></i> Overdue
+        </span>
+      </template>
+
+      <!-- Slot: Status -->
+      <template #status="{ item }">
+        <span :class="['badge', `badge-${item.status}`]">
+          <i v-if="item.status === 'completed'" class="bi bi-check-circle-fill"></i>
+          <i v-else-if="item.status === 'missed'" class="bi bi-x-circle-fill"></i>
+          <i v-else class="bi bi-hourglass-split"></i>
+          {{ item.status }}
+        </span>
+      </template>
+
+      <!-- Slot: Notes -->
+      <template #notes="{ item }">
+        <span style="font-size:0.8125rem;color:var(--text-secondary);">{{ item.notes || '—' }}</span>
+      </template>
+
+      <!-- Slot: Executive -->
+      <template #assigned_user="{ item }">
+        <span style="font-size:0.875rem;" class="d-inline-flex align-items-center gap-1">
+          <i class="bi bi-person text-secondary"></i>
+          {{ item.assigned_user?.name || 'Unassigned' }}
+        </span>
+      </template>
+
+      <!-- Slot: Actions -->
+      <template #actions="{ item }">
+        <div class="d-flex flex-wrap gap-1">
+          <button @click="triggerCall(item.lead?.phone)" class="btn btn-secondary btn-sm" title="Call">
+            <i class="bi bi-telephone-fill"></i>
+          </button>
+          <button @click="triggerWhatsApp(item.lead)" class="btn btn-whatsapp btn-sm" title="WhatsApp">
+            <i class="bi bi-whatsapp"></i>
+          </button>
+          <button
+            v-if="item.status === 'pending' || item.status === 'missed'"
+            @click="openRescheduleModal(item)"
+            class="btn btn-secondary btn-sm"
+            title="Reschedule"
+          >
+            <i class="bi bi-calendar-event"></i> Reschedule
+          </button>
+          <button
+            v-if="item.status === 'pending' || item.status === 'missed'"
+            @click="openCompleteModal(item)"
+            class="btn btn-primary btn-sm"
+            title="Complete"
+          >
+            <i class="bi bi-check-lg"></i> Complete
+          </button>
+          <button
+            v-if="hasRole(['Super Admin', 'Company Admin'])"
+            @click="deleteConfirm(item)"
+            class="btn btn-danger btn-sm"
+            title="Delete"
+          >
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </template>
+    </DataTable>
 
     <!-- Complete Modal -->
     <div v-if="activeModal === 'complete'" class="modal-overlay" @click.self="activeModal = null">
@@ -249,7 +220,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useFollowUpsStore } from '@/stores/followups';
 import { useIndianFormat } from '@/composables/useIndianFormat';
 import { useWhatsApp } from '@/composables/useWhatsApp';
@@ -258,6 +230,8 @@ import { usePermissions } from '@/composables/usePermissions';
 import { useToast } from '@/composables/useToast';
 import { useSwal } from '@/composables/useSwal';
 
+const route = useRoute();
+const router = useRouter();
 const followUpsStore = useFollowUpsStore();
 const { formatDateTime, formatPhone } = useIndianFormat();
 const { openWhatsApp } = useWhatsApp();
@@ -266,9 +240,18 @@ const { hasRole } = usePermissions();
 const toast = useToast();
 const { confirmDelete } = useSwal();
 
-const currentTab = ref('today');
+const currentTab = ref(route.query.tab || 'today');
+const followUps = computed(() => followUpsStore.followUps || []);
 const loading = computed(() => followUpsStore.loading);
-const followUps = computed(() => followUpsStore.followUps);
+const followUpColumns = [
+  { key: 'customer', label: 'Customer / Lead', sortable: true, sortKey: 'lead.name', minWidth: '180px' },
+  { key: 'type', label: 'Type', sortable: true, minWidth: '110px' },
+  { key: 'scheduled_at', label: 'Scheduled', sortable: true, minWidth: '140px' },
+  { key: 'status', label: 'Status', sortable: true, minWidth: '120px' },
+  { key: 'notes', label: 'Notes', minWidth: '180px' },
+  { key: 'assigned_user', label: 'Executive', sortable: true, sortKey: 'assigned_user.name', minWidth: '130px' },
+  { key: 'actions', label: 'Actions', minWidth: '170px', align: 'end' }
+];
 
 const tabItems = [
   { label: 'Today', value: 'today', icon: 'bi bi-sun' },
@@ -303,13 +286,24 @@ onMounted(() => {
   loadFollowUps();
 });
 
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab && newTab !== currentTab.value) {
+      currentTab.value = newTab;
+      loadFollowUps();
+    }
+  }
+);
+
 const switchTab = (tabValue) => {
   currentTab.value = tabValue;
+  router.replace({ query: { ...route.query, tab: tabValue } });
   loadFollowUps();
 };
 
 const isOverdue = (item) => {
-  if (item.status !== 'pending') return false;
+  if (!['pending', 'missed'].includes(item.status)) return false;
   return new Date(item.scheduled_at) < new Date();
 };
 
@@ -318,8 +312,10 @@ const triggerCall = (phone) => {
 };
 
 const triggerWhatsApp = (lead) => {
-  const msg = `Hello ${lead.name},\n\nJust reaching out over WhatsApp to follow up.`;
-  openWhatsApp(lead.phone, msg);
+  if (!lead) return;
+  const targetNumber = lead.whatsapp_number || lead.phone;
+  const msg = `Hello ${lead.name || 'there'},\n\nJust reaching out over WhatsApp to follow up.`;
+  openWhatsApp(targetNumber, msg);
 };
 
 const openCompleteModal = (item) => {

@@ -14,83 +14,56 @@
       </button>
     </div>
 
-    <!-- Skeleton Loading -->
-    <div v-if="loading" class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Source Name</th>
-            <th>Source Code</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="i in 4" :key="i">
-            <td><div class="skeleton" style="height: 14px; width: 130px;"></div></td>
-            <td><div class="skeleton" style="height: 14px; width: 80px;"></div></td>
-            <td><div class="skeleton" style="height: 20px; width: 60px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 28px; width: 60px; border-radius: 6px;"></div></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Reusable DataTable -->
+    <DataTable
+      :columns="sourceColumns"
+      :data="sources"
+      :loading="loading"
+      :searchable="true"
+      search-placeholder="Search source name..."
+      :pagination="true"
+      :page-size="10"
+      empty-icon="bi-funnel"
+      empty-title="No sources configured"
+      empty-description="Add lead sources to track where your leads come from."
+    >
+      <template #name="{ item }">
+        <span class="fw-600 text-dark">{{ item.name }}</span>
+      </template>
 
-    <!-- Table -->
-    <div v-else-if="sources.length" class="table-responsive">
-      <table class="table table-hover table-mobile-cards mb-0">
-        <thead>
-          <tr>
-            <th>Source Name</th>
-            <th>Source Code</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="source in sources" :key="source.id">
-            <td>
-              <span class="td-label">Name</span>
-              <span class="fw-600 text-dark">{{ source.name }}</span>
-            </td>
-            <td>
-              <span class="td-label">Code</span>
-              <code>{{ source.code }}</code>
-            </td>
-            <td>
-              <span class="td-label">Status</span>
-              <span :class="['badge', source.is_active ? 'badge-completed' : 'badge-cancelled']">
-                <i :class="source.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
-                {{ source.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Actions</span>
-              <div class="d-flex gap-2">
-                <button @click="openEditModal(source)" class="btn btn-secondary btn-sm" title="Edit Source">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
-                <button @click="deleteConfirm(source)" class="btn btn-danger btn-sm" title="Delete Source">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <template #code="{ item }">
+        <code>{{ item.code }}</code>
+      </template>
 
-    <!-- Empty -->
-    <div v-else class="card">
-      <div class="card-body empty-state">
-        <div class="empty-state-icon"><i class="bi bi-funnel"></i></div>
-        <span class="empty-state-title">No sources configured</span>
-        <p class="empty-state-desc">Add lead sources to track where your leads come from.</p>
-        <button @click="openCreateModal" class="btn btn-primary mt-2">
-          <i class="bi bi-plus-lg"></i> Add First Source
-        </button>
-      </div>
-    </div>
+      <template #is_active="{ item }">
+        <span :class="['badge', item.is_active ? 'badge-completed' : 'badge-cancelled']">
+          <i :class="item.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
+          {{ item.is_active ? 'Active' : 'Inactive' }}
+        </span>
+      </template>
+
+      <template #actions="{ item }">
+        <div class="d-flex gap-2">
+          <button @click="openEditModal(item)" class="btn btn-secondary btn-sm" title="Edit Source">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button @click="deleteConfirm(item)" class="btn btn-danger btn-sm" title="Delete Source">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </template>
+
+      <template #empty>
+        <div class="empty-state py-5">
+          <div class="empty-state-icon"><i class="bi bi-funnel"></i></div>
+          <span class="empty-state-title">No sources configured</span>
+          <p class="empty-state-desc">Add lead sources to track where your leads come from.</p>
+          <button @click="openCreateModal" class="btn btn-primary mt-2">
+            <i class="bi bi-plus-lg"></i> Add First Source
+          </button>
+        </div>
+      </template>
+    </DataTable>
 
     <!-- Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -162,6 +135,14 @@ const { confirmDelete } = useSwal();
 const loading = ref(true);
 const saving = ref(false);
 const sources = ref([]);
+
+const sourceColumns = [
+  { key: 'name', label: 'Source Name', sortable: true, minWidth: '200px' },
+  { key: 'code', label: 'Source Code', sortable: true, minWidth: '150px' },
+  { key: 'is_active', label: 'Status', sortable: true, minWidth: '110px' },
+  { key: 'actions', label: 'Actions', minWidth: '150px', align: 'end' }
+];
+
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);

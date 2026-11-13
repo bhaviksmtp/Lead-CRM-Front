@@ -8,6 +8,7 @@ export const useLeadsStore = defineStore('leads', {
     currentLead: null,
     loading: false,
     timeline: [],
+    notes: [],
     error: null
   }),
   actions: {
@@ -72,6 +73,16 @@ export const useLeadsStore = defineStore('leads', {
         console.error('Failed to load timeline', err);
       }
     },
+    async fetchNotes(id) {
+      try {
+        const response = await leadsApi.getNotes(id);
+        this.notes = response.data.notes || [];
+        return this.notes;
+      } catch (err) {
+        console.error('Failed to load notes', err);
+        return [];
+      }
+    },
     async logActivity(id, data) {
       const response = await leadsApi.logActivity(id, data);
       await this.fetchTimeline(id);
@@ -79,6 +90,7 @@ export const useLeadsStore = defineStore('leads', {
     },
     async addNote(id, note) {
       const response = await leadsApi.addNote(id, { note });
+      await this.fetchNotes(id);
       await this.fetchTimeline(id);
       return response.data;
     },

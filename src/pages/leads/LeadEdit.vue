@@ -93,10 +93,14 @@
               </div>
 
               <div class="mb-0">
-                <label class="form-label">Company Name</label>
+                <label class="form-label">
+                  Company Name
+                  <small class="text-muted fw-normal">(Leave blank for Individual clients)</small>
+                </label>
                 <input
                   v-model="form.company_name"
                   type="text"
+                  placeholder="e.g. Apex Industrial Solutions (or leave empty)"
                   :class="['form-control', { 'is-invalid': validationErrors.company_name }]"
                   @input="clearError('company_name')"
                 />

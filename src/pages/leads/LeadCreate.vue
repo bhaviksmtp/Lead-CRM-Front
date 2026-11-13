@@ -78,6 +78,25 @@
               </div>
 
               <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label mb-0" for="lead-whatsapp">WhatsApp Number</label>
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="sameAsPhone" v-model="sameAsPhone" @change="syncWhatsAppNumber" />
+                    <label class="form-check-label text-muted small" for="sameAsPhone">Same as Mobile</label>
+                  </div>
+                </div>
+                <input
+                  id="lead-whatsapp"
+                  v-model="form.whatsapp_number"
+                  type="text"
+                  :class="['form-control', { 'is-invalid': validationErrors.whatsapp_number }]"
+                  placeholder="e.g. 9876543210"
+                  :disabled="sameAsPhone"
+                />
+                <div v-if="validationErrors.whatsapp_number" class="invalid-feedback">{{ validationErrors.whatsapp_number[0] }}</div>
+              </div>
+
+              <div class="mb-3">
                 <label class="form-label" for="lead-email">Email Address</label>
                 <input
                   id="lead-email"
@@ -91,15 +110,21 @@
               </div>
 
               <div class="mb-3">
-                <label class="form-label" for="lead-company">Company / Business Name</label>
+                <label class="form-label" for="lead-company">
+                  Company / Business Name
+                  <small class="text-muted fw-normal">(Leave blank for Individual clients)</small>
+                </label>
                 <input
                   id="lead-company"
                   v-model="form.company_name"
                   type="text"
                   :class="['form-control', { 'is-invalid': validationErrors.company_name }]"
-                  placeholder="e.g. Apex Industrial Solutions"
+                  placeholder="e.g. Apex Industrial Solutions (or leave empty)"
                   @input="clearError('company_name')"
                 />
+                <small class="text-muted d-block mt-1" style="font-size:0.75rem;">
+                  Leads with a company name are classified as Business accounts; empty entries are marked as Individual.
+                </small>
                 <div v-if="validationErrors.company_name" class="invalid-feedback">{{ validationErrors.company_name[0] }}</div>
               </div>
 
@@ -270,8 +295,20 @@ const checkDuplicateDebounced = () => {
   }, 400);
 };
 
+const sameAsPhone = ref(true);
+
+const syncWhatsAppNumber = () => {
+  if (sameAsPhone.value) {
+    form.whatsapp_number = form.phone;
+    clearError('whatsapp_number');
+  }
+};
+
 const handlePhoneInput = () => {
   clearError('phone');
+  if (sameAsPhone.value) {
+    form.whatsapp_number = form.phone;
+  }
   checkDuplicateDebounced();
 };
 

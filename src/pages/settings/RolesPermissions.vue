@@ -191,64 +191,62 @@
       </div>
 
       <!-- TAB 3: USER ACCESS CONTROL -->
-      <div v-else-if="activeTab === 'users'" class="card shadow-sm border-0" style="border-radius:12px;">
-        <div class="card-body p-0 table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: var(--bg-tertiary);">
-              <tr>
-                <th style="padding: 16px 20px;">User</th>
-                <th>Email</th>
-                <th>Assigned Role</th>
-                <th>Effective Permissions</th>
-                <th>Status</th>
-                <th class="text-end" style="padding: 16px 20px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in users" :key="user.id">
-                <td style="padding: 14px 20px;">
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="avatar" style="width:34px;height:34px;font-size:0.8rem;background:linear-gradient(135deg, #4f46e5, #6366f1);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
-                      {{ user.name.charAt(0).toUpperCase() }}
-                    </div>
-                    <div>
-                      <div class="fw-600 text-dark">{{ user.name }}</div>
-                      <div v-if="currentUser.id === user.id" class="badge bg-primary-light text-primary" style="font-size:0.65rem;">You</div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span style="font-size:0.875rem;">{{ user.email }}</span>
-                </td>
-                <td>
-                  <span :class="['badge', getRoleBadgeClass(user.roles?.[0])]">
-                    {{ user.roles?.[0] || 'Salesperson' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="badge bg-light text-dark border">
-                    <i class="bi bi-key-fill text-warning me-1"></i>
-                    {{ user.permissions?.length || 0 }} Privileges Active
-                  </span>
-                </td>
-                <td>
-                  <span :class="['badge', user.is_active ? 'badge-completed' : 'badge-cancelled']">
-                    {{ user.is_active ? 'Active' : 'Inactive' }}
-                  </span>
-                </td>
-                <td class="text-end" style="padding: 14px 20px;">
-                  <button
-                    @click="openUserAccessModal(user)"
-                    class="btn btn-secondary btn-sm"
-                    title="Change Role & Privileges"
-                  >
-                    <i class="bi bi-shield-shaded me-1"></i> Configure Access
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div v-else-if="activeTab === 'users'">
+        <DataTable
+          :columns="userAccessColumns"
+          :data="users"
+          :loading="loading"
+          :searchable="true"
+          search-placeholder="Search user, email, role..."
+          :pagination="true"
+          :page-size="10"
+          empty-title="No users found"
+        >
+          <template #user="{ item }">
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar" style="width:34px;height:34px;font-size:0.8rem;background:linear-gradient(135deg, #4f46e5, #6366f1);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
+                {{ item.name.charAt(0).toUpperCase() }}
+              </div>
+              <div>
+                <div class="fw-600 text-dark">{{ item.name }}</div>
+                <div v-if="currentUser.id === item.id" class="badge bg-primary-light text-primary" style="font-size:0.65rem;">You</div>
+              </div>
+            </div>
+          </template>
+
+          <template #email="{ item }">
+            <span style="font-size:0.875rem;">{{ item.email }}</span>
+          </template>
+
+          <template #role="{ item }">
+            <span :class="['badge', getRoleBadgeClass(item.roles?.[0])]">
+              {{ item.roles?.[0] || 'Salesperson' }}
+            </span>
+          </template>
+
+          <template #permissions="{ item }">
+            <span class="badge bg-light text-dark border">
+              <i class="bi bi-key-fill text-warning me-1"></i>
+              {{ item.permissions?.length || 0 }} Privileges Active
+            </span>
+          </template>
+
+          <template #status="{ item }">
+            <span :class="['badge', item.is_active ? 'badge-completed' : 'badge-cancelled']">
+              {{ item.is_active ? 'Active' : 'Inactive' }}
+            </span>
+          </template>
+
+          <template #actions="{ item }">
+            <button
+              @click="openUserAccessModal(item)"
+              class="btn btn-secondary btn-sm"
+              title="Change Role & Privileges"
+            >
+              <i class="bi bi-shield-shaded me-1"></i> Configure Access
+            </button>
+          </template>
+        </DataTable>
       </div>
     </div>
 
@@ -448,6 +446,15 @@ const roles = ref([]);
 const users = ref([]);
 const permissionGroups = ref([]);
 const allPermissionsList = ref([]);
+
+const userAccessColumns = [
+  { key: 'user', label: 'User', sortable: true, sortKey: 'name', minWidth: '160px' },
+  { key: 'email', label: 'Email', sortable: true, minWidth: '180px' },
+  { key: 'role', label: 'Assigned Role', sortable: true, minWidth: '130px' },
+  { key: 'permissions', label: 'Effective Permissions', minWidth: '220px' },
+  { key: 'status', label: 'Status', sortable: true, minWidth: '110px' },
+  { key: 'actions', label: 'Actions', align: 'end', minWidth: '130px' }
+];
 
 const showRoleModal = ref(false);
 const isEditRole = ref(false);

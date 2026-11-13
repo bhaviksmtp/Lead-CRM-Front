@@ -14,116 +14,71 @@
       </button>
     </div>
 
-    <!-- Skeleton Loading -->
-    <div v-if="loading" class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="i in 4" :key="i">
-            <td>
-              <div class="d-flex align-items-center gap-2">
-                <div class="skeleton-avatar"></div>
-                <div>
-                  <div class="skeleton mb-1" style="height: 14px; width: 110px;"></div>
-                  <div class="skeleton" style="height: 10px; width: 60px;"></div>
-                </div>
-              </div>
-            </td>
-            <td><div class="skeleton" style="height: 14px; width: 130px;"></div></td>
-            <td><div class="skeleton" style="height: 14px; width: 90px;"></div></td>
-            <td><div class="skeleton" style="height: 20px; width: 70px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 20px; width: 60px; border-radius: 10px;"></div></td>
-            <td><div class="skeleton" style="height: 28px; width: 60px; border-radius: 6px;"></div></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Reusable DataTable -->
+    <DataTable
+      :columns="userColumns"
+      :data="users"
+      :loading="loading"
+      :searchable="true"
+      search-placeholder="Search name, email, phone..."
+      :pagination="true"
+      :page-size="10"
+      empty-icon="bi-people"
+      empty-title="No team members found"
+      empty-description="Add your first team member to get started."
+    >
+      <template #name="{ item }">
+        <div class="d-flex align-items-center gap-2">
+          <div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">
+            {{ item.name.charAt(0).toUpperCase() }}
+          </div>
+          <span class="fw-600 text-dark">{{ item.name }}</span>
+        </div>
+      </template>
 
-    <!-- Table -->
-    <div v-else-if="users.length" class="table-responsive">
-      <table class="table table-hover table-mobile-cards mb-0">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in users" :key="user.id">
-            <td>
-              <span class="td-label">Name</span>
-              <div class="d-flex align-items-center gap-2">
-                <div class="avatar" style="width:32px;height:32px;font-size:0.75rem;">
-                  {{ user.name.charAt(0).toUpperCase() }}
-                </div>
-                <span class="fw-600 text-dark">{{ user.name }}</span>
-              </div>
-            </td>
-            <td>
-              <span class="td-label">Email</span>
-              <span style="font-size:0.875rem;">{{ user.email }}</span>
-            </td>
-            <td>
-              <span class="td-label">Phone</span>
-              <span style="font-size:0.875rem;">{{ user.phone || '—' }}</span>
-            </td>
-            <td>
-              <span class="td-label">Role</span>
-              <span class="badge badge-low">{{ user.roles?.[0] || 'Salesperson' }}</span>
-            </td>
-            <td>
-              <span class="td-label">Status</span>
-              <span :class="['badge', user.is_active ? 'badge-completed' : 'badge-cancelled']">
-                <i :class="user.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
-                {{ user.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>
-              <span class="td-label">Actions</span>
-              <div class="d-flex gap-2">
-                <button @click="openEditModal(user)" class="btn btn-secondary btn-sm" title="Edit Member">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
-                <button
-                  v-if="user.is_active"
-                  @click="deactivateUser(user)"
-                  class="btn btn-danger btn-sm"
-                  :disabled="currentUser.id === user.id"
-                  title="Deactivate Account"
-                >
-                  <i class="bi bi-person-x"></i> Deactivate
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <template #phone="{ item }">
+        <span style="font-size:0.875rem;">{{ item.phone || '—' }}</span>
+      </template>
 
-    <!-- Empty -->
-    <div v-else class="card">
-      <div class="card-body empty-state">
-        <div class="empty-state-icon"><i class="bi bi-people"></i></div>
-        <span class="empty-state-title">No team members found</span>
-        <p class="empty-state-desc">Add your first team member to get started.</p>
-        <button @click="openCreateModal" class="btn btn-primary mt-2">
-          <i class="bi bi-person-plus-fill"></i> Add Team Member
-        </button>
-      </div>
-    </div>
+      <template #role="{ item }">
+        <span class="badge badge-low">{{ item.roles?.[0] || 'Salesperson' }}</span>
+      </template>
+
+      <template #status="{ item }">
+        <span :class="['badge', item.is_active ? 'badge-completed' : 'badge-cancelled']">
+          <i :class="item.is_active ? 'bi bi-check-circle-fill' : 'bi bi-dash-circle-fill'"></i>
+          {{ item.is_active ? 'Active' : 'Inactive' }}
+        </span>
+      </template>
+
+      <template #actions="{ item }">
+        <div class="d-flex gap-2">
+          <button @click="openEditModal(item)" class="btn btn-secondary btn-sm" title="Edit Member">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button
+            v-if="item.is_active"
+            @click="deactivateUser(item)"
+            class="btn btn-danger btn-sm"
+            :disabled="currentUser.id === item.id"
+            title="Deactivate Account"
+          >
+            <i class="bi bi-person-x"></i> Deactivate
+          </button>
+        </div>
+      </template>
+
+      <template #empty>
+        <div class="empty-state py-5">
+          <div class="empty-state-icon"><i class="bi bi-people"></i></div>
+          <span class="empty-state-title">No team members found</span>
+          <p class="empty-state-desc">Add your first team member to get started.</p>
+          <button @click="openCreateModal" class="btn btn-primary mt-2">
+            <i class="bi bi-person-plus-fill"></i> Add Team Member
+          </button>
+        </div>
+      </template>
+    </DataTable>
 
     <!-- Create/Edit Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -249,6 +204,16 @@ const loading = ref(true);
 const saving = ref(false);
 const users = ref([]);
 const roles = ref([]);
+
+const userColumns = [
+  { key: 'name', label: 'Name', sortable: true, minWidth: '160px' },
+  { key: 'email', label: 'Email', sortable: true, minWidth: '180px' },
+  { key: 'phone', label: 'Phone', sortable: true, minWidth: '130px' },
+  { key: 'role', label: 'Role', sortable: true, minWidth: '120px' },
+  { key: 'status', label: 'Status', sortable: true, minWidth: '100px' },
+  { key: 'actions', label: 'Actions', minWidth: '140px', align: 'end' }
+];
+
 const showModal = ref(false);
 const isEdit = ref(false);
 const activeId = ref(null);
